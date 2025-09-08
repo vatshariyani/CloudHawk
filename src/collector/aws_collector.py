@@ -62,7 +62,13 @@ class AWSCollector:
                             "severity": severity,
                             "description": f"Security group {sg.get('GroupName')} allows {rule.get('IpProtocol')} "
                                            f"from {cidr} on ports {rule.get('FromPort')}-{rule.get('ToPort')}",
-                            "raw_event": sg
+                            "raw_event": sg,
+                            # Add rule-compatible fields
+                            "sg": {
+                                "name": sg.get("GroupName"),
+                                "id": sg.get("GroupId"),
+                                "rules": f"{rule.get('IpProtocol')}/{rule.get('FromPort')}-{rule.get('ToPort')},{cidr}"
+                            }
                         })
         except Exception as e:
             events.append({
@@ -117,7 +123,7 @@ class AWSCollector:
                         severity = "MEDIUM"
                         desc = f"S3 bucket {bucket_name} has no encryption enabled."
 
-                # --- Append normalized event ---
+                # --- Append normalized event with rule-compatible structure ---
                 events.append({
                     "timestamp": datetime.datetime.utcnow().isoformat(),
                     "source": "AWS_S3",
@@ -126,10 +132,20 @@ class AWSCollector:
                     "severity": severity,
                     "description": desc,
                     "raw_event": {
-                    "name": bucket_name,
-                    "acl": bucket_info.get("acl"),
-                    "policy": bucket_info.get("policy"),
-                    "encryption": bucket_info.get("encryption")
+                        "name": bucket_name,
+                        "acl": bucket_info.get("acl"),
+                        "policy": bucket_info.get("policy"),
+                        "encryption": bucket_info.get("encryption")
+                    },
+                    # Add rule-compatible fields
+                    "bucket": {
+                        "name": bucket_name,
+                        "acl": bucket_info.get("acl"),
+                        "policy": bucket_info.get("policy"),
+                        "encryption": bucket_info.get("encryption"),
+                        "publicAccessBlock": bucket_info.get("publicAccessBlock", True),
+                        "logging": bucket_info.get("logging", False),
+                        "versioning": bucket_info.get("versioning", False)
                     }
                 })
 
@@ -152,7 +168,14 @@ class AWSCollector:
                     "event_type": "IAM_USER",
                     "severity": "LOW",
                     "description": f"IAM user {user.get('UserName')} detected.",
-                    "raw_event": user
+                    "raw_event": user,
+                    # Add rule-compatible fields
+                    "user": {
+                        "name": user.get("UserName"),
+                        "lastActiveDays": 0,  # Would need additional API call to get this
+                        "activeKeys": 0,  # Would need additional API call to get this
+                        "previousCountries": []  # Would need additional logic to track this
+                    }
                 })
 
             for role in roles.get("Roles", []):
@@ -163,7 +186,12 @@ class AWSCollector:
                     "event_type": "IAM_ROLE",
                     "severity": "LOW",
                     "description": f"IAM role {role.get('RoleName')} detected.",
-                    "raw_event": role
+                    "raw_event": role,
+                    # Add rule-compatible fields
+                    "role": {
+                        "name": role.get("RoleName"),
+                        "trustPolicy": role.get("AssumeRolePolicyDocument", {})
+                    }
                 })
 
         except Exception as e:
@@ -210,7 +238,17 @@ class AWSCollector:
                     "event_type": event_name,
                     "severity": severity,
                     "description": f"CloudTrail event {event_name} by {user}",
-                    "raw_event": event
+                    "raw_event": event,
+                    # Add rule-compatible fields
+                    "event": {
+                        "action": event_name,
+                        "user": user,
+                        "mfa": event.get("userIdentity", {}).get("mfaAuthenticated", False),
+                        "authType": event.get("userIdentity", {}).get("type", "unknown"),
+                        "errorCode": event.get("errorCode"),
+                        "region": event.get("awsRegion"),
+                        "sourceIPAddress": event.get("sourceIPAddress")
+                    }
                 })
 
         except Exception as e:
@@ -582,11 +620,15 @@ if __name__ == "__main__":
     activity_events = cloudtrail_events + cloudwatch_logs + ssm_logs + app_logs + eks_audit_logs
     threat_detection = guardduty_findings + inspector_findings + waf_logs
     traffic_logs = vpc_flow + s3_access + alb_logs
+    All_Logs = misconfig_events + iam_misuse_events + activity_events + threat_detection + traffic_logs
     
     
     # Write to files
     def save_logs(filename, events):
-        with open(os.path.join("logs", filename), "w") as f:
+        # Ensure logs directory exists
+        logs_dir = os.path.join(os.path.dirname(__file__), "logs")
+        os.makedirs(logs_dir, exist_ok=True)
+        with open(os.path.join(logs_dir, filename), "w") as f:
             json.dump(events, f, indent=2, default=str)
 
     save_logs("misconfigurations.json", misconfig_events)
@@ -594,5 +636,6 @@ if __name__ == "__main__":
     save_logs("activity_logs.json", activity_events)
     save_logs("threat_detection.json", threat_detection)
     save_logs("traffic_logs.json", traffic_logs)
+    save_logs("All_Logs.json", All_Logs)
 
     print("✅ Logs saved in logs/ folder")
