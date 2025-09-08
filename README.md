@@ -71,7 +71,7 @@
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/cloudhawk.git
+   git clone https://github.com/vatshariyani/cloudhawk.git
    cd cloudhawk
    ```
 
@@ -390,3 +390,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Made with ❤️ by the CloudHawk team**
 
 *Protecting your cloud infrastructure, one alert at a time.*
+
