@@ -1,0 +1,1073 @@
+rules:
+
+  #######################################
+  # IAM Misuse / Privilege Escalation (30)
+  #######################################
+  - id: IAM-001
+    title: Root account usage
+    description: Detect usage of AWS root account
+    service: IAM
+    condition: event.user == "root"
+    severity: CRITICAL
+    remediation: "Disable root keys and use IAM roles."
+
+  - id: IAM-002
+    title: Root account API key usage
+    description: Root using access keys
+    service: IAM
+    condition: event.user == "root" and event.authType == "accessKey"
+    severity: CRITICAL
+    remediation: "Remove root keys immediately."
+
+  - id: IAM-003
+    title: Console login without MFA
+    description: User login without MFA
+    service: IAM
+    condition: event.action == "ConsoleLogin" and event.mfa == false
+    severity: HIGH
+    remediation: "Enable MFA for all IAM users."
+
+  - id: IAM-004
+    title: Multiple failed logins
+    description: >-
+      Detect 5+ failed logins within 10 minutes
+    service: IAM
+    condition: event.failedLogins > 5
+    severity: HIGH
+    remediation: "Investigate brute-force attempt."
+
+  - id: IAM-005
+    title: Access key created
+    description: New IAM access key generated
+    service: IAM
+    condition: event.action == "CreateAccessKey"
+    severity: HIGH
+    remediation: "Validate approval and monitor usage."
+
+  - id: IAM-006
+    title: Access key without rotation
+    description: Keys older than 90 days
+    service: IAM
+    condition: key.ageDays > 90
+    severity: MEDIUM
+    remediation: "Rotate access keys regularly."
+
+  - id: IAM-007
+    title: User policy directly attached
+    description: Direct policies attached to IAM user
+    service: IAM
+    condition: event.action == "AttachUserPolicy"
+    severity: HIGH
+    remediation: "Use groups or roles instead."
+
+  - id: IAM-008
+    title: Inline policy created
+    description: Detect inline IAM policy usage
+    service: IAM
+    condition: event.action == "PutUserPolicy"
+    severity: MEDIUM
+    remediation: "Prefer managed policies."
+
+  - id: IAM-009
+    title: AdministratorAccess assigned
+    description: Admin policy attached to user/role
+    service: IAM
+    condition: policy.name == "AdministratorAccess"
+    severity: CRITICAL
+    remediation: "Restrict admin permissions."
+
+  - id: IAM-010
+    title: Cross-account assume role
+    description: Role trusts external accounts
+    service: IAM
+    condition: role.trustPolicy.contains("Account != self")
+    severity: HIGH
+    remediation: "Restrict trust relationships."
+
+  - id: IAM-011
+    title: Privilege escalation via PassRole
+    description: iam:PassRole with EC2 usage
+    service: IAM
+    condition: policy.actions.contains("iam:PassRole") and policy.actions.contains("ec2:RunInstances")
+    severity: CRITICAL
+    remediation: "Restrict PassRole carefully."
+
+  - id: IAM-012
+    title: IAM role deletion
+    description: Role removed
+    service: IAM
+    condition: event.action == "DeleteRole"
+    severity: HIGH
+    remediation: "Verify if deletion was intended."
+
+  - id: IAM-013
+    title: Login from unusual location
+    description: Country not seen before for user
+    service: IAM
+    condition: geoip.country not in user.previousCountries
+    severity: HIGH
+    remediation: "Investigate suspicious login."
+
+  - id: IAM-014
+    title: Service-specific credential created
+    description: Service-specific credentials created
+    service: IAM
+    condition: event.action == "CreateServiceSpecificCredential"
+    severity: MEDIUM
+    remediation: "Review usage necessity."
+
+  - id: IAM-015
+    title: Inactive IAM user
+    description: User inactive for 90 days
+    service: IAM
+    condition: user.lastActiveDays > 90
+    severity: MEDIUM
+    remediation: "Remove or disable inactive users."
+
+  - id: IAM-016
+    title: Multiple active keys
+    description: User has more than one active key
+    service: IAM
+    condition: user.activeKeys > 1
+    severity: MEDIUM
+    remediation: "Limit users to one key."
+
+  - id: IAM-017
+    title: Weak password policy
+    description: Account has weak password policy
+    service: IAM
+    condition: account.passwordPolicy == "weak"
+    severity: HIGH
+    remediation: "Enforce stronger password policy."
+
+  - id: IAM-018
+    title: Unusual API call volume
+    description: Abnormal number of API calls
+    service: IAM
+    condition: event.apiCalls > threshold
+    severity: HIGH
+    remediation: "Investigate potential misuse."
+
+  - id: IAM-019
+    title: Repeated unauthorized API calls
+    description: Excessive AccessDenied errors
+    service: IAM
+    condition: event.errorCode == "AccessDenied" and event.count > 5
+    severity: MEDIUM
+    remediation: "Check for brute-force or misconfig."
+
+  - id: IAM-020
+    title: AssumeRole misuse
+    description: Unexpected entity assuming role
+    service: IAM
+    condition: event.action == "AssumeRole" and event.source not in approvedAccounts
+    severity: CRITICAL
+    remediation: "Restrict trust policies."
+
+  - id: IAM-021
+    title: Access key used from unusual IP
+    description: Access key from new IP or geo
+    service: IAM
+    condition: geoip.country not in key.previousCountries
+    severity: HIGH
+    remediation: "Investigate possible compromise."
+
+  - id: IAM-022
+    title: Policy modified
+    description: IAM policy updated
+    service: IAM
+    condition: event.action == "UpdatePolicy"
+    severity: MEDIUM
+    remediation: "Audit all policy changes."
+
+  - id: IAM-023
+    title: IAM user deletion
+    description: User deleted
+    service: IAM
+    condition: event.action == "DeleteUser"
+    severity: HIGH
+    remediation: "Verify user deletion intent."
+
+  - id: IAM-024
+    title: Login from TOR
+    description: Login from TOR exit node
+    service: IAM
+    condition: geoip.source in torExitNodes
+    severity: CRITICAL
+    remediation: "Block TOR logins or add extra checks."
+
+  - id: IAM-025
+    title: Long-lived credential
+    description: Key older than 1 year
+    service: IAM
+    condition: key.ageDays > 365
+    severity: HIGH
+    remediation: "Rotate old credentials."
+
+  - id: IAM-026
+    title: Overly permissive IAM policy
+    description: Wildcard in policy
+    service: IAM
+    condition: policy.resource == "*" or policy.action == "*"
+    severity: CRITICAL
+    remediation: "Apply least privilege principle."
+
+  - id: IAM-027
+    title: AWS managed policy altered
+    description: AWS-managed IAM policy updated
+    service: IAM
+    condition: policy.type == "AWSManaged" and event.action == "UpdatePolicy"
+    severity: CRITICAL
+    remediation: "Restrict and monitor managed policies."
+
+  - id: IAM-028
+    title: IAM group policy altered
+    description: Group permissions changed
+    service: IAM
+    condition: event.action in ["AttachGroupPolicy","DetachGroupPolicy","PutGroupPolicy"]
+    severity: HIGH
+    remediation: "Monitor group-level privilege changes."
+
+  - id: IAM-029
+    title: IAM Access Analyzer finding
+    description: Cross-account issue detected
+    service: IAM
+    condition: analyzer.findings > 0
+    severity: HIGH
+    remediation: "Review analyzer findings."
+
+  - id: IAM-030
+    title: Compromised credential alert
+    description: AWS detects leaked IAM key
+    service: IAM
+    condition: aws.securityFinding == "CompromisedKey"
+    severity: CRITICAL
+    remediation: "Revoke key and investigate breach."
+
+
+  #######################################
+  # S3 Misconfigurations / Data Exposure (20)
+  #######################################
+  - id: S3-001
+    title: Public bucket
+    description: Bucket allows public read
+    service: S3
+    condition: bucket.acl.contains("AllUsers") or bucket.acl.contains("AuthenticatedUsers")
+    severity: CRITICAL
+    remediation: "Remove public access."
+
+  - id: S3-002
+    title: Public write access
+    description: Bucket allows public write
+    service: S3
+    condition: bucket.acl.contains("AllUsers") and bucket.acl.contains("WRITE")
+    severity: CRITICAL
+    remediation: "Remove public write permissions."
+
+  - id: S3-003
+    title: Unencrypted bucket
+    description: No default encryption enabled
+    service: S3
+    condition: bucket.encryption == "Not enabled"
+    severity: HIGH
+    remediation: "Enable default encryption."
+
+  - id: S3-004
+    title: Missing bucket logging
+    description: Logging not enabled
+    service: S3
+    condition: bucket.logging == false
+    severity: MEDIUM
+    remediation: "Enable bucket access logging."
+
+  - id: S3-005
+    title: Bucket policy overly permissive
+    description: Bucket policy allows *
+    service: S3
+    condition: bucket.policy.contains("*")
+    severity: CRITICAL
+    remediation: "Restrict policies."
+
+  - id: S3-006
+    title: Sensitive data in bucket
+    description: Detect PII or secrets in S3
+    service: S3
+    condition: bucket.scan.findings > 0
+    severity: HIGH
+    remediation: "Move sensitive data securely."
+
+  - id: S3-007
+    title: Cross-account bucket access
+    description: Bucket allows external accounts
+    service: S3
+    condition: bucket.policy.contains("Principal:*")
+    severity: HIGH
+    remediation: "Restrict to specific accounts."
+
+  - id: S3-008
+    title: Bucket with website hosting
+    description: S3 website hosting enabled
+    service: S3
+    condition: bucket.websiteHosting == true
+    severity: MEDIUM
+    remediation: "Ensure no sensitive files exposed."
+
+  - id: S3-009
+    title: Versioning not enabled
+    description: Bucket missing versioning
+    service: S3
+    condition: bucket.versioning == false
+    severity: MEDIUM
+    remediation: "Enable versioning for recovery."
+
+  - id: S3-010
+    title: Lifecycle policy missing
+    description: Bucket without lifecycle rules
+    service: S3
+    condition: bucket.lifecycleRules == 0
+    severity: LOW
+    remediation: "Enable lifecycle rules."
+
+  - id: S3-011
+    title: Access logging disabled
+    description: Access logging not set
+    service: S3
+    condition: bucket.logging == false
+    severity: MEDIUM
+    remediation: "Enable access logging."
+
+  - id: S3-012
+    title: Object-level public ACL
+    description: Public object ACL detected
+    service: S3
+    condition: object.acl == "public"
+    severity: HIGH
+    remediation: "Remove public object ACLs."
+
+  - id: S3-013
+    title: BlockPublicAccess not enforced
+    description: PublicAccessBlock disabled
+    service: S3
+    condition: bucket.publicAccessBlock == false
+    severity: CRITICAL
+    remediation: "Enable S3 Block Public Access."
+
+  - id: S3-014
+    title: Cross-region replication missing
+    description: Bucket lacks replication
+    service: S3
+    condition: bucket.replication == false
+    severity: LOW
+    remediation: "Enable replication if needed."
+
+  - id: S3-015
+    title: Unused bucket
+    description: No activity in 90 days
+    service: S3
+    condition: bucket.lastAccessed > 90
+    severity: LOW
+    remediation: "Delete or archive unused buckets."
+
+  - id: S3-016
+    title: MFA delete not enabled
+    description: MFA delete disabled
+    service: S3
+    condition: bucket.mfaDelete == false
+    severity: HIGH
+    remediation: "Enable MFA delete for security."
+
+  - id: S3-017
+    title: Bucket policy allows anonymous
+    description: Anonymous access allowed
+    service: S3
+    condition: 'bucket.policy.contains("Principal: *")'
+    severity: CRITICAL
+    remediation: "Block anonymous access."
+
+  - id: S3-018
+    title: Old bucket with no encryption
+    description: Legacy bucket unencrypted
+    service: S3
+    condition: bucket.creationDate < "2017" and bucket.encryption == "None"
+    severity: HIGH
+    remediation: "Migrate to encryption enabled."
+
+  - id: S3-019
+    title: S3 used for malware hosting
+    description: Known bad files detected
+    service: S3
+    condition: threatintel.findings > 0
+    severity: CRITICAL
+    remediation: "Quarantine and investigate."
+
+  - id: S3-020
+    title: Sensitive bucket policy change
+    description: Policy changed unexpectedly
+    service: S3
+    condition: event.action == "PutBucketPolicy"
+    severity: HIGH
+    remediation: "Verify policy change intent."
+
+
+  #######################################
+  # EC2 / Security Groups (15)
+  #######################################
+  - id: EC2-001
+    title: SSH open to world
+    description: Security group allows 0.0.0.0/0 on port 22
+    service: EC2
+    condition: sg.rules.contains("tcp/22-22,0.0.0.0/0")
+    severity: CRITICAL
+    remediation: "Restrict SSH access to specific IPs."
+
+  - id: EC2-002
+    title: RDP open to world
+    description: Security group allows 0.0.0.0/0 on port 3389
+    service: EC2
+    condition: sg.rules.contains("tcp/3389-3389,0.0.0.0/0")
+    severity: CRITICAL
+    remediation: "Restrict RDP to specific IP ranges."
+
+  - id: EC2-003
+    title: All traffic allowed
+    description: Security group allows all protocols and ports
+    service: EC2
+    condition: sg.rules.contains("ALL,0.0.0.0/0")
+    severity: CRITICAL
+    remediation: "Restrict to least privilege."
+
+  - id: EC2-004
+    title: Insecure AMI usage
+    description: EC2 launched with public AMI of unknown source
+    service: EC2
+    condition: instance.ami not in approvedList
+    severity: HIGH
+    remediation: "Only allow approved AMIs."
+
+  - id: EC2-005
+    title: EC2 without IAM role
+    description: Instance missing IAM role
+    service: EC2
+    condition: instance.iamRole == None
+    severity: MEDIUM
+    remediation: "Assign least privilege IAM role."
+
+  - id: EC2-006
+    title: Instance metadata v1 enabled
+    description: IMDSv1 still accessible
+    service: EC2
+    condition: instance.imds == "v1"
+    severity: HIGH
+    remediation: "Enforce IMDSv2."
+
+  - id: EC2-007
+    title: Public IP assigned
+    description: Instance launched with public IP
+    service: EC2
+    condition: instance.publicIp != None
+    severity: MEDIUM
+    remediation: "Avoid assigning public IPs directly."
+
+  - id: EC2-008
+    title: EBS volume unencrypted
+    description: Unencrypted EBS volume detected
+    service: EC2
+    condition: volume.encryption == false
+    severity: HIGH
+    remediation: "Enable encryption for all volumes."
+
+  - id: EC2-009
+    title: Snapshot publicly shared
+    description: EBS snapshot accessible by all
+    service: EC2
+    condition: snapshot.acl == "public"
+    severity: CRITICAL
+    remediation: "Restrict snapshot permissions."
+
+  - id: EC2-010
+    title: Old AMI in use
+    description: EC2 instance running outdated AMI
+    service: EC2
+    condition: ami.lastUpdated > 365
+    severity: MEDIUM
+    remediation: "Update to newer AMI versions."
+
+  - id: EC2-011
+    title: Default security group in use
+    description: Instances attached to default SG
+    service: EC2
+    condition: sg.name == "default"
+    severity: HIGH
+    remediation: "Avoid using default security group."
+
+  - id: EC2-012
+    title: Unauthorized port open
+    description: SG allows uncommon high-risk ports
+    service: EC2
+    condition: sg.rules.contains("tcp/23,0.0.0.0/0") or sg.rules.contains("tcp/445,0.0.0.0/0")
+    severity: HIGH
+    remediation: "Close unnecessary ports."
+
+  - id: EC2-013
+    title: EC2 instance stopped unexpectedly
+    description: Abnormal stop detected
+    service: EC2
+    condition: event.action == "StopInstances" and event.source != "automation"
+    severity: MEDIUM
+    remediation: "Investigate stop activity."
+
+  - id: EC2-014
+    title: EC2 instance terminated
+    description: Instance terminated unexpectedly
+    service: EC2
+    condition: event.action == "TerminateInstances" and event.source != "automation"
+    severity: HIGH
+    remediation: "Confirm if termination was intended."
+
+  - id: EC2-015
+    title: Security group modified
+    description: Security group rules altered
+    service: EC2
+    condition: event.action in ["AuthorizeSecurityGroupIngress","RevokeSecurityGroupIngress"]
+    severity: HIGH
+    remediation: "Review all SG changes."
+
+
+  #######################################
+  # CloudTrail Suspicious Activity (20)
+  #######################################
+  - id: CT-001
+    title: CloudTrail disabled
+    description: CloudTrail trail stopped
+    service: CloudTrail
+    condition: event.action == "StopLogging"
+    severity: CRITICAL
+    remediation: "Re-enable CloudTrail immediately."
+
+  - id: CT-002
+    title: CloudTrail deleted
+    description: Trail deleted unexpectedly
+    service: CloudTrail
+    condition: event.action == "DeleteTrail"
+    severity: CRITICAL
+    remediation: "Ensure logging continuity."
+
+  - id: CT-003
+    title: New region activity
+    description: API call in previously unused region
+    service: CloudTrail
+    condition: event.region not in account.knownRegions
+    severity: HIGH
+    remediation: "Investigate unusual region use."
+
+  - id: CT-004
+    title: Console login without MFA
+    description: Login attempt without MFA
+    service: CloudTrail
+    condition: event.action == "ConsoleLogin" and event.mfa == false
+    severity: HIGH
+    remediation: "Enforce MFA on console access."
+
+  - id: CT-005
+    title: Large number of access denied
+    description: Multiple AccessDenied errors
+    service: CloudTrail
+    condition: event.errorCode == "AccessDenied" and event.count > 10
+    severity: MEDIUM
+    remediation: "Check for brute force or misuse."
+
+  - id: CT-006
+    title: Suspicious IAM role assumption
+    description: Unexpected AssumeRole usage
+    service: CloudTrail
+    condition: event.action == "AssumeRole" and event.source not in approvedAccounts
+    severity: CRITICAL
+    remediation: "Restrict trust policies."
+
+  - id: CT-007
+    title: CloudTrail log file validation disabled
+    description: Integrity validation disabled
+    service: CloudTrail
+    condition: trail.validation == false
+    severity: HIGH
+    remediation: "Enable log file validation."
+
+  - id: CT-008
+    title: New access key used
+    description: Newly created key making API calls
+    service: CloudTrail
+    condition: key.ageDays < 1 and event.source == "API"
+    severity: HIGH
+    remediation: "Validate access key creation."
+
+  - id: CT-009
+    title: Root account usage detected
+    description: Root user API call
+    service: CloudTrail
+    condition: event.user == "root"
+    severity: CRITICAL
+    remediation: "Disable root key usage."
+
+  - id: CT-010
+    title: Security group modification
+    description: SG changed outside change window
+    service: CloudTrail
+    condition: event.action in ["AuthorizeSecurityGroupIngress","RevokeSecurityGroupIngress"] and event.time not in approvedChangeWindow
+    severity: HIGH
+    remediation: "Investigate unauthorized SG change."
+
+  - id: CT-011
+    title: S3 bucket policy modified
+    description: Bucket policy changed
+    service: CloudTrail
+    condition: event.action == "PutBucketPolicy"
+    severity: HIGH
+    remediation: "Review bucket policy change."
+
+  - id: CT-012
+    title: Multiple regions activity
+    description: API calls across 3+ regions within 1 hour
+    service: CloudTrail
+    condition: distinct(event.region) > 3 in 1h
+    severity: HIGH
+    remediation: "Check for compromised account."
+
+  - id: CT-013
+    title: IAM policy updated
+    description: Privilege escalation via new policy
+    service: CloudTrail
+    condition: event.action == "PutUserPolicy" or event.action == "AttachRolePolicy"
+    severity: CRITICAL
+    remediation: "Review IAM policy updates."
+
+  - id: CT-014
+    title: GuardDuty disabled
+    description: GuardDuty turned off
+    service: CloudTrail
+    condition: event.action == "DeleteDetector"
+    severity: CRITICAL
+    remediation: "Re-enable GuardDuty."
+
+  - id: CT-015
+    title: KMS key deletion
+    description: Customer KMS key deleted
+    service: CloudTrail
+    condition: event.action == "ScheduleKeyDeletion"
+    severity: CRITICAL
+    remediation: "Investigate KMS key deletion."
+
+  - id: CT-016
+    title: VPC flow logs disabled
+    description: Flow logging turned off
+    service: CloudTrail
+    condition: event.action == "DeleteFlowLogs"
+    severity: HIGH
+    remediation: "Enable flow logs."
+
+  - id: CT-017
+    title: CloudTrail logs to untrusted bucket
+    description: Logs written to external bucket
+    service: CloudTrail
+    condition: event.action == "UpdateTrail" and bucket.owner != account.id
+    severity: CRITICAL
+    remediation: "Restrict trail destinations."
+
+  - id: CT-018
+    title: CloudTrail multi-account sharing
+    description: Logs accessible by other accounts
+    service: CloudTrail
+    condition: bucket.policy.contains("Principal:*")
+    severity: HIGH
+    remediation: "Restrict log sharing."
+
+  - id: CT-019
+    title: Unusual API invoked
+    description: API rarely used in account
+    service: CloudTrail
+    condition: event.api not in commonApis
+    severity: MEDIUM
+    remediation: "Investigate rare API usage."
+
+  - id: CT-020
+    title: CloudTrail encryption disabled
+    description: Logs not encrypted with KMS
+    service: CloudTrail
+    condition: trail.encryption == false
+    severity: HIGH
+    remediation: "Enable encryption on trails."
+
+
+  #######################################
+  # VPC Flow / Network anomalies (10)
+  #######################################
+  - id: VPC-001
+    title: Port scanning activity
+    description: Multiple sequential ports scanned from single source
+    service: VPC
+    condition: flowLogs.srcIp == same and distinct(flowLogs.dstPort) > 20 in 1m
+    severity: HIGH
+    remediation: "Investigate source for port scan."
+
+  - id: VPC-002
+    title: Unusually high traffic
+    description: Sudden spike in network bytes
+    service: VPC
+    condition: flowLogs.bytes > baseline * 5 in 10m
+    severity: MEDIUM
+    remediation: "Check for data exfiltration or DDoS."
+
+  - id: VPC-003
+    title: Traffic from blacklisted IP
+    description: Known malicious IP observed in flow logs
+    service: VPC
+    condition: flowLogs.srcIp in threatIntel.blacklist
+    severity: CRITICAL
+    remediation: "Block traffic and investigate."
+
+  - id: VPC-004
+    title: Traffic to unusual country
+    description: Outbound connection to rare geo-location
+    service: VPC
+    condition: geoip(flowLogs.dstIp).country not in approvedCountries
+    severity: HIGH
+    remediation: "Investigate outbound connection."
+
+  - id: VPC-005
+    title: Inbound traffic on sensitive ports
+    description: External access to non-standard ports
+    service: VPC
+    condition: flowLogs.dstPort in [1433,3306,1521,5432] and flowLogs.srcIp not in approvedList
+    severity: HIGH
+    remediation: "Restrict access to DB ports."
+
+  - id: VPC-006
+    title: Denial of Service attempt
+    description: Excessive connections per second
+    service: VPC
+    condition: count(flowLogs.connAttempts) > 1000 in 1m
+    severity: CRITICAL
+    remediation: "Rate-limit or block attacker."
+
+  - id: VPC-007
+    title: Internal lateral movement
+    description: Suspicious traffic between internal hosts
+    service: VPC
+    condition: flowLogs.srcSubnet != flowLogs.dstSubnet and dstPort in [445,3389]
+    severity: HIGH
+    remediation: "Investigate potential worm or pivot."
+
+  - id: VPC-008
+    title: Traffic to TOR exit node
+    description: Connection to TOR known node
+    service: VPC
+    condition: flowLogs.dstIp in threatIntel.torNodes
+    severity: CRITICAL
+    remediation: "Block TOR traffic."
+
+  - id: VPC-009
+    title: Unusual protocol usage
+    description: Rare protocol detected in logs
+    service: VPC
+    condition: flowLogs.protocol not in [tcp,udp,icmp]
+    severity: MEDIUM
+    remediation: "Review why unusual protocol is allowed."
+
+  - id: VPC-010
+    title: Data exfiltration attempt
+    description: Large outbound transfer to external IP
+    service: VPC
+    condition: flowLogs.bytes > 1GB in 5m and dstIp not in trustedList
+    severity: CRITICAL
+    remediation: "Investigate potential exfiltration."
+
+
+  #######################################
+  # GuardDuty / Inspector detections (15)
+  #######################################
+  - id: GD-001
+    title: Crypto mining detected
+    description: GuardDuty flagged mining activity
+    service: GuardDuty
+    condition: gd.finding.type == "CryptoCurrency:EC2/BitcoinTool.B"
+    severity: CRITICAL
+    remediation: "Isolate instance immediately."
+
+  - id: GD-002
+    title: Unauthorized access key usage
+    description: GuardDuty flagged stolen key
+    service: GuardDuty
+    condition: gd.finding.type == "UnauthorizedAccess:IAMUser/KeyUsage"
+    severity: CRITICAL
+    remediation: "Revoke keys and rotate immediately."
+
+  - id: GD-003
+    title: Tor IP usage
+    description: GuardDuty finding for TOR activity
+    service: GuardDuty
+    condition: gd.finding.type == "UnauthorizedAccess:EC2/TorClient"
+    severity: HIGH
+    remediation: "Investigate compromised instance."
+
+  - id: GD-004
+    title: IAM persistence attempt
+    description: GuardDuty flagged backdoor creation
+    service: GuardDuty
+    condition: gd.finding.type == "Persistence:IAMUser/CreateAccessKey"
+    severity: HIGH
+    remediation: "Check for unauthorized IAM actions."
+
+  - id: GD-005
+    title: Ransomware signature detected
+    description: Inspector flagged ransomware
+    service: Inspector
+    condition: inspector.finding.type == "Software Vulnerability/Ransomware"
+    severity: CRITICAL
+    remediation: "Quarantine affected hosts."
+
+  - id: GD-006
+    title: EC2 brute force attempt
+    description: GuardDuty flagged SSH brute force
+    service: GuardDuty
+    condition: gd.finding.type == "BruteForce:EC2/SSHBruteForce"
+    severity: HIGH
+    remediation: "Block offending IP and rotate credentials."
+
+  - id: GD-007
+    title: Unpatched vulnerable package
+    description: Inspector detected CVE
+    service: Inspector
+    condition: inspector.finding.severity >= "HIGH"
+    severity: HIGH
+    remediation: "Patch affected package."
+
+  - id: GD-008
+    title: Malware detected on instance
+    description: Inspector/GuardDuty flagged malware
+    service: GuardDuty
+    condition: gd.finding.type contains "Malware"
+    severity: CRITICAL
+    remediation: "Isolate instance and investigate."
+
+  - id: GD-009
+    title: Root account usage
+    description: GuardDuty flagged root account activity
+    service: GuardDuty
+    condition: gd.finding.type == "UnauthorizedAccess:RootAccount"
+    severity: CRITICAL
+    remediation: "Disable root key usage."
+
+  - id: GD-010
+    title: Credential exfiltration detected
+    description: GuardDuty detected exfil of keys
+    service: GuardDuty
+    condition: gd.finding.type == "Exfiltration:IAMUser/Credentials"
+    severity: CRITICAL
+    remediation: "Revoke keys and investigate compromise."
+
+  - id: GD-011
+    title: Reconnaissance from external IP
+    description: GuardDuty flagged port probe
+    service: GuardDuty
+    condition: gd.finding.type == "Recon:EC2/PortProbeUnprotectedPort"
+    severity: MEDIUM
+    remediation: "Restrict exposed ports."
+
+  - id: GD-012
+    title: CloudTrail logs tampered
+    description: GuardDuty flagged trail modification
+    service: GuardDuty
+    condition: gd.finding.type == "DefenseEvasion:CloudTrail/LoggingDisabled"
+    severity: CRITICAL
+    remediation: "Re-enable CloudTrail and investigate."
+
+  - id: GD-013
+    title: Sensitive data exposure
+    description: Inspector flagged sensitive data in logs
+    service: Inspector
+    condition: inspector.finding.type == "SensitiveData:S3/Object"
+    severity: HIGH
+    remediation: "Restrict object ACL and review exposure."
+
+  - id: GD-014
+    title: EC2 compromised instance
+    description: GuardDuty flagged known compromised host
+    service: GuardDuty
+    condition: gd.finding.type == "Backdoor:EC2/Spambot"
+    severity: CRITICAL
+    remediation: "Isolate and reimage EC2 instance."
+
+  - id: GD-015
+    title: Suspicious DNS requests
+    description: GuardDuty flagged malicious DNS queries
+    service: GuardDuty
+    condition: gd.finding.type == "Trojan:EC2/DNSRequest"
+    severity: HIGH
+    remediation: "Block outbound DNS and review activity."
+
+
+  #######################################
+  # CloudWatch log-based suspicious patterns (10)
+  #######################################
+  - id: CW-001
+    title: Application error spike
+    description: Sudden surge of ERROR logs in application logs
+    service: CloudWatch
+    condition: count(log.message contains "ERROR") > 100 in 5m
+    severity: MEDIUM
+    remediation: "Check app for crash or misconfig."
+
+  - id: CW-002
+    title: Unauthorized login attempt
+    description: Multiple failed logins in short time
+    service: CloudWatch
+    condition: count(log.message contains "Failed login") > 10 in 1m
+    severity: HIGH
+    remediation: "Investigate brute force attempts."
+
+  - id: CW-003
+    title: Privileged command execution
+    description: Logs contain execution of sudo/admin commands
+    service: CloudWatch
+    condition: log.message matches "sudo|root|admin"
+    severity: HIGH
+    remediation: "Verify if privileged command was authorized."
+
+  - id: CW-004
+    title: Sensitive file access
+    description: Access to sensitive system/application files
+    service: CloudWatch
+    condition: log.message contains "/etc/passwd" or "secrets"
+    severity: HIGH
+    remediation: "Review why sensitive file was accessed."
+
+  - id: CW-005
+    title: Denied access events
+    description: Multiple 403/401 errors in app logs
+    service: CloudWatch
+    condition: count(log.message contains "403" or "401") > 50 in 5m
+    severity: MEDIUM
+    remediation: "Investigate unusual access attempts."
+
+  - id: CW-006
+    title: Web application attack pattern
+    description: Logs show SQL injection or XSS payloads
+    service: CloudWatch
+    condition: log.message matches "UNION SELECT|<script>| OR 1=1"
+    severity: CRITICAL
+    remediation: "Review WAF rules and block attacker."
+
+  - id: CW-007
+    title: Large request body anomaly
+    description: Oversized request payload detected
+    service: CloudWatch
+    condition: log.message.size > 10MB
+    severity: MEDIUM
+    remediation: "Review for file upload abuse or DoS."
+
+  - id: CW-008
+    title: Unexpected service invocation
+    description: Application log shows calls to unauthorized service
+    service: CloudWatch
+    condition: log.message contains "Invoke AWS service not in allowlist"
+    severity: HIGH
+    remediation: "Validate app is not compromised."
+
+  - id: CW-009
+    title: Repeated crash events
+    description: Same service crashing repeatedly
+    service: CloudWatch
+    condition: count(log.message contains "Service crashed") > 5 in 10m
+    severity: MEDIUM
+    remediation: "Stabilize service, review deployment."
+
+  - id: CW-010
+    title: Unexpected admin login
+    description: Rare admin account login outside business hours
+    service: CloudWatch
+    condition: log.user == "admin" and log.timestamp not in businessHours
+    severity: HIGH
+    remediation: "Confirm if login was legitimate."
+
+
+  #######################################
+  # EKS / Kubernetes audit logs (10)
+  #######################################
+  - id: EKS-001
+    title: Anonymous API access
+    description: K8s audit log shows anonymous access to API
+    service: EKS
+    condition: eks.audit.user == "system:anonymous"
+    severity: CRITICAL
+    remediation: "Disable anonymous API access."
+
+  - id: EKS-002
+    title: Privilege escalation in cluster
+    description: User escalated to cluster-admin role
+    service: EKS
+    condition: eks.audit.verb == "create" and eks.audit.role == "cluster-admin"
+    severity: HIGH
+    remediation: "Check if escalation was authorized."
+
+  - id: EKS-003
+    title: Pod exec detected
+    description: Suspicious `kubectl exec` usage
+    service: EKS
+    condition: eks.audit.verb == "exec"
+    severity: HIGH
+    remediation: "Verify if exec session was intended."
+
+  - id: EKS-004
+    title: Privileged container launched
+    description: Pod started with privileged=true
+    service: EKS
+    condition: eks.audit.pod.securityContext.privileged == true
+    severity: HIGH
+    remediation: "Block privileged pods."
+
+  - id: EKS-005
+    title: Secret accessed
+    description: K8s secret accessed by unexpected user
+    service: EKS
+    condition: eks.audit.resource == "secrets" and user not in allowlist
+    severity: CRITICAL
+    remediation: "Investigate secret leakage."
+
+  - id: EKS-006
+    title: New role binding created
+    description: RoleBinding granting wide permissions
+    service: EKS
+    condition: eks.audit.resource == "rolebindings" and eks.audit.verb == "create"
+    severity: HIGH
+    remediation: "Validate if binding was legitimate."
+
+  - id: EKS-007
+    title: DaemonSet modification
+    description: Modification to DaemonSet which runs on all nodes
+    service: EKS
+    condition: eks.audit.resource == "daemonsets" and verb == "update"
+    severity: HIGH
+    remediation: "Review for persistence techniques."
+
+  - id: EKS-008
+    title: Suspicious image pulled
+    description: Pod pulled container image from unknown registry
+    service: EKS
+    condition: eks.audit.imageRegistry not in approvedRegistries
+    severity: HIGH
+    remediation: "Block untrusted registries."
+
+  - id: EKS-009
+    title: Pod running as root
+    description: Pod security violation - running as root
+    service: EKS
+    condition: eks.audit.pod.securityContext.runAsUser == 0
+    severity: MEDIUM
+    remediation: "Enforce PodSecurityPolicy to block root containers."
+
+  - id: EKS-010
+    title: Unauthorized kubeconfig usage
+    description: Access from unusual kubeconfig credentials
+    service: EKS
+    condition: eks.audit.kubeconfigId not in approvedList
+    severity: HIGH
+    remediation: "Investigate suspicious kubeconfig usage."
