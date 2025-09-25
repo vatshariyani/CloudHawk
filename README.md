@@ -1,12 +1,51 @@
 # 🦅 CloudHawk
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![AWS](https://img.shields.io/badge/AWS-FF9900?logo=amazon-aws&logoColor=white)](https://aws.amazon.com/)
-[![GCP](https://img.shields.io/badge/GCP-4285F4?logo=google-cloud&logoColor=white)](https://cloud.google.com/)
-[![Azure](https://img.shields.io/badge/Azure-0078D4?logo=microsoft-azure&logoColor=white)](https://azure.microsoft.com/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
-**CloudHawk** is an open-source Cloud IAM Misuse Detection Tool that monitors AWS, GCP, and Azure logs to detect suspicious identity activity and misconfigurations in real-time. Built for security teams who need comprehensive cloud security monitoring without the complexity of enterprise solutions.
+**CloudHawk** is an open-source Cloud Security Monitoring Tool that scans AWS infrastructure to detect security misconfigurations, compliance violations, and potential threats. Built for security teams who need comprehensive cloud security monitoring without the complexity of enterprise solutions.
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Python 3.8+
+- AWS CLI configured with appropriate permissions
+- Docker (optional, for containerized deployment)
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/cloudhawk.git
+   cd cloudhawk
+   ```
+
+2. **Run the setup script**
+   ```bash
+   python setup.py
+   ```
+
+3. **Configure AWS credentials** (if not already done)
+   ```bash
+   aws configure
+   ```
+
+4. **Run your first security scan**
+   ```bash
+   python test_security_detection.py
+   ```
+
+### Docker Deployment
+
+```bash
+# Build and run with Docker Compose
+docker-compose up -d
+
+# Access the web dashboard at http://localhost:5000
+```
 
 ## 🚀 Features
 
@@ -144,45 +183,58 @@ azure:
 
 ```bash
 # Scan AWS environment
-cloudhawk scan aws --region us-east-1
+python src/cli/cloudhawk_cli.py scan aws --region us-east-1
 
-# Check specific S3 buckets
-cloudhawk scan s3 --bucket my-bucket-name
+# View security alerts
+python src/cli/cloudhawk_cli.py alerts --severity CRITICAL
 
-# Run custom rule set
-cloudhawk detect --rules custom-rules.yaml
+# Show detection rules
+python src/cli/cloudhawk_cli.py rules --service EC2
 
-# Generate security report
-cloudhawk report --format pdf --output security-report.pdf
+# Start web dashboard
+python src/cli/cloudhawk_cli.py web --port 8080
 ```
 
 ### Python API
 
 ```python
-from cloudhawk import CloudHawk
+import sys
+sys.path.insert(0, 'src')
 
-# Initialize CloudHawk
-hawk = CloudHawk(config_file="config.yaml")
+from collector.aws_collector import AWSCollector
+from detection.rule_engine import RuleEngine
 
-# Collect data
-aws_data = hawk.collect_aws()
-gcp_data = hawk.collect_gcp()
-azure_data = hawk.collect_azure()
+# Initialize AWS collector
+collector = AWSCollector(region="us-east-1", max_events=1000)
 
-# Run detection
-alerts = hawk.detect_threats()
+# Collect security data
+security_events = collector.collect_all_security_data()
 
-# Send alerts
-hawk.send_alerts(alerts, channels=["slack", "email"])
+# Save events
+events_file = collector.save_security_events(security_events)
+
+# Run rule engine
+rule_engine = RuleEngine("src/detection/security_rules.yaml", events_file)
+rule_engine.run()
+
+# View alerts
+for alert in rule_engine.alerts:
+    print(f"{alert['severity']}: {alert['title']}")
 ```
 
 ### Web Dashboard
 
-Access the web dashboard at `http://localhost:5000` to:
+Start the web dashboard:
+```bash
+python src/web/app.py
+```
+
+Access at `http://localhost:5000` to:
 - View real-time security alerts
-- Analyze security trends
+- Run security scans
 - Manage detection rules
 - Configure alerting channels
+- **Toggle between light and dark themes** using the theme button in the navigation bar
 
 ## 📊 Detection Rules
 
@@ -377,13 +429,40 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Discussions**: [GitHub Discussions](https://github.com/yourusername/cloudhawk/discussions)
 - **Email**: support@cloudhawk.dev
 
+## 📋 Current Implementation Status
+
+### ✅ Completed Features
+
+- **AWS Security Collection**: EC2, S3, IAM, CloudTrail, GuardDuty
+- **Rule Engine**: Multi-threaded detection with 30+ security rules
+- **Web Dashboard**: Flask-based UI with real-time monitoring
+- **CLI Interface**: Comprehensive command-line tool
+- **Alerting**: Slack and email notification support
+- **Docker Support**: Containerized deployment
+- **Configuration Management**: YAML-based configuration
+
+### 🚧 In Progress
+
+- **Enhanced Detection Rules**: Expanding rule coverage
+- **Performance Optimization**: Large-scale data processing
+- **Integration Testing**: End-to-end workflow validation
+
+### 📋 Planned Features
+
+- **Multi-Cloud Support**: GCP and Azure collectors
+- **ML-Based Anomaly Detection**: Behavioral analysis
+- **Compliance Reporting**: SOC2, PCI-DSS, CIS benchmarks
+- **API Integration**: RESTful API for external tools
+- **Advanced Analytics**: Trend analysis and reporting
+
 ## 🗺️ Roadmap
 
-- [ ] **v2.0**: Enhanced ML-based anomaly detection
+- [ ] **v1.1**: Enhanced rule coverage and performance optimization
+- [ ] **v1.2**: GCP and Azure support
+- [ ] **v2.0**: ML-based anomaly detection
 - [ ] **v2.1**: Kubernetes security monitoring
 - [ ] **v2.2**: Compliance reporting (SOC2, PCI-DSS)
 - [ ] **v2.3**: Threat intelligence integration
-- [ ] **v2.4**: Mobile app for security teams
 
 ---
 

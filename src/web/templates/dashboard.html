@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - CloudHawk{% endblock %}
+
+{% block content %}
+<style>
+/* Dark mode styles for dashboard page */
+[data-theme="dark"] .card {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .card-header {
+    background-color: var(--bg-tertiary) !important;
+    border-bottom-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .table {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > td {
+    background-color: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] .table-hover tbody tr:hover {
+    background-color: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .btn-outline-secondary {
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .btn-outline-secondary:hover {
+    background-color: var(--bg-tertiary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <h1 class="h3 mb-4">
+            <i class="fas fa-tachometer-alt"></i> Security Dashboard
+        </h1>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-primary">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </h5>
+                <h2 class="card-text text-primary" id="total-alerts">{{ summary.total }}</h2>
+                <p class="card-text">Total Alerts</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title severity-critical">
+                    <i class="fas fa-skull-crossbones"></i>
+                </h5>
+                <h2 class="card-text severity-critical" id="severity-critical">{{ summary.by_severity.get('CRITICAL', 0) }}</h2>
+                <p class="card-text">Critical</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title severity-high">
+                    <i class="fas fa-exclamation-circle"></i>
+                </h5>
+                <h2 class="card-text severity-high" id="severity-high">{{ summary.by_severity.get('HIGH', 0) }}</h2>
+                <p class="card-text">High</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title severity-medium">
+                    <i class="fas fa-exclamation"></i>
+                </h5>
+                <h2 class="card-text severity-medium" id="severity-medium">{{ summary.by_severity.get('MEDIUM', 0) }}</h2>
+                <p class="card-text">Medium</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie"></i> Alerts by Severity
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="severityChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-bar"></i> Alerts by Service
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="serviceChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Alerts -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clock"></i> Recent Alerts (Last 24 Hours)
+                </h5>
+                <a href="{{ url_for('alerts') }}" class="btn btn-sm btn-outline-primary">
+                    View All Alerts
+                </a>
+            </div>
+            <div class="card-body">
+                {% if summary.recent %}
+                    <div class="list-group list-group-flush">
+                        {% for alert in summary.recent[:5] %}
+                        <div class="list-group-item alert-item alert-{{ alert.severity.lower() }}">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">
+                                    <span class="badge bg-{{ 'danger' if alert.severity == 'CRITICAL' else 'warning' if alert.severity == 'HIGH' else 'info' if alert.severity == 'MEDIUM' else 'success' }}">
+                                        {{ alert.severity }}
+                                    </span>
+                                    {{ alert.title }}
+                                </h6>
+                                <small class="text-muted">
+                                    {{ alert.timestamp[:19] if alert.timestamp else 'Unknown' }}
+                                </small>
+                            </div>
+                            <p class="mb-1">{{ alert.description }}</p>
+                            <small class="text-muted">
+                                <i class="fas fa-tag"></i> {{ alert.service }} | 
+                                <i class="fas fa-fingerprint"></i> {{ alert.rule_id }}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-check-circle fa-3x mb-3"></i>
+                        <p>No recent alerts found. Your infrastructure looks secure!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt"></i> Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <a href="{{ url_for('scan') }}" class="btn btn-primary w-100 mb-2">
+                            <i class="fas fa-search"></i> Run Security Scan
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('alerts') }}" class="btn btn-outline-primary w-100 mb-2">
+                            <i class="fas fa-exclamation-triangle"></i> View All Alerts
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('rules') }}" class="btn btn-outline-secondary w-100 mb-2">
+                            <i class="fas fa-cogs"></i> Manage Rules
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('config') }}" class="btn btn-outline-secondary w-100 mb-2">
+                            <i class="fas fa-sliders-h"></i> Configuration
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Global chart variables
+let severityChart = null;
+let serviceChart = null;
+
+// Chart configuration for dark mode
+function getChartColors() {
+    try {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        return {
+            text: isDark ? '#ffffff' : '#212529',
+            grid: isDark ? '#495057' : '#dee2e6',
+            background: isDark ? '#2d2d2d' : '#ffffff'
+        };
+    } catch (e) {
+        console.warn('Chart colors failed:', e);
+        return {
+            text: '#212529',
+            grid: '#dee2e6',
+            background: '#ffffff'
+        };
+    }
+}
+
+// Initialize Severity Chart
+try {
+    const severityCtx = document.getElementById('severityChart');
+    if (severityCtx) {
+        severityChart = new Chart(severityCtx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Critical', 'High', 'Medium', 'Low'],
+                datasets: [{
+                    data: [
+                        {{ summary.by_severity.get('CRITICAL', 0) }},
+                        {{ summary.by_severity.get('HIGH', 0) }},
+                        {{ summary.by_severity.get('MEDIUM', 0) }},
+                        {{ summary.by_severity.get('LOW', 0) }}
+                    ],
+                    backgroundColor: [
+                        '#dc3545',
+                        '#fd7e14',
+                        '#ffc107',
+                        '#28a745'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: getChartColors().text
+                        }
+                    }
+                }
+            }
+        });
+    }
+} catch (e) {
+    console.warn('Severity chart failed:', e);
+}
+
+// Initialize Service Chart
+try {
+    const serviceCtx = document.getElementById('serviceChart');
+    if (serviceCtx) {
+        serviceChart = new Chart(serviceCtx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: {{ summary.by_service.keys() | list | tojson }},
+                datasets: [{
+                    label: 'Alerts',
+                    data: {{ summary.by_service.values() | list | tojson }},
+                    backgroundColor: [
+                        '#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1',
+                        '#20c997', '#fd7e14', '#6c757d', '#e83e8c', '#17a2b8'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: getChartColors().text
+                        },
+                        grid: {
+                            color: getChartColors().grid
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            color: getChartColors().text
+                        },
+                        grid: {
+                            color: getChartColors().grid
+                        }
+                    }
+                }
+            }
+        });
+    }
+} catch (e) {
+    console.warn('Service chart failed:', e);
+}
+
+// Update charts when theme changes
+function updateCharts() {
+    try {
+        const colors = getChartColors();
+        
+        // Update severity chart
+        if (severityChart && severityChart.options && severityChart.options.plugins) {
+            severityChart.options.plugins.legend.labels.color = colors.text;
+            severityChart.update();
+        }
+        
+        // Update service chart
+        if (serviceChart && serviceChart.options && serviceChart.options.scales) {
+            serviceChart.options.scales.x.ticks.color = colors.text;
+            serviceChart.options.scales.x.grid.color = colors.grid;
+            serviceChart.options.scales.y.ticks.color = colors.text;
+            serviceChart.options.scales.y.grid.color = colors.grid;
+            serviceChart.update();
+        }
+    } catch (e) {
+        console.warn('Chart update failed:', e);
+    }
+}
+
+// Listen for theme changes
+try {
+    document.addEventListener('themeChanged', updateCharts);
+
+    // Override the setTheme function to trigger chart updates
+    const originalSetTheme = window.setTheme;
+    if (originalSetTheme) {
+        window.setTheme = function(theme) {
+            originalSetTheme(theme);
+            setTimeout(updateCharts, 100); // Small delay to ensure theme is applied
+        };
+    }
+} catch (e) {
+    console.warn('Theme listener setup failed:', e);
+}
+</script>
+{% endblock %}

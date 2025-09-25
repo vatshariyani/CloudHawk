@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block title %}Security Scan - CloudHawk{% endblock %}
+
+{% block content %}
+<style>
+/* Dark mode styles for scan page */
+[data-theme="dark"] .card {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .card-header {
+    background-color: var(--bg-tertiary) !important;
+    border-bottom-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .form-control, [data-theme="dark"] .form-select {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .form-control:focus, [data-theme="dark"] .form-select:focus {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--bs-primary) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+}
+
+[data-theme="dark"] .btn-outline-secondary {
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .btn-outline-secondary:hover {
+    background-color: var(--bg-tertiary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <h1 class="h3 mb-4">
+            <i class="fas fa-search"></i> Security Scan
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cog"></i> Scan Configuration
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="region" class="form-label">AWS Region</label>
+                            <select class="form-select" id="region" name="region" required>
+                                <option value="us-east-1" {% if config.aws.default_region == 'us-east-1' %}selected{% endif %}>US East (N. Virginia)</option>
+                                <option value="us-west-2" {% if config.aws.default_region == 'us-west-2' %}selected{% endif %}>US West (Oregon)</option>
+                                <option value="eu-west-1" {% if config.aws.default_region == 'eu-west-1' %}selected{% endif %}>Europe (Ireland)</option>
+                                <option value="ap-southeast-1" {% if config.aws.default_region == 'ap-southeast-1' %}selected{% endif %}>Asia Pacific (Singapore)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="max_events" class="form-label">Max Events per Service</label>
+                            <input type="number" class="form-control" id="max_events" name="max_events" 
+                                   value="{{ config.aws.max_events_per_service }}" min="100" max="10000" required>
+                            <div class="form-text">Maximum number of events to collect per AWS service</div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Services to Scan</label>
+                            <div class="row">
+                                {% for service in ['ec2', 's3', 'iam', 'cloudtrail', 'guardduty'] %}
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="service_{{ service }}" 
+                                               name="services" value="{{ service }}" 
+                                               {% if service in config.aws.services %}checked{% endif %}>
+                                        <label class="form-check-label" for="service_{{ service }}">
+                                            {{ service.upper() }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <button type="button" class="btn btn-outline-info me-2" onclick="sendAlerts('email')">
+                                    <i class="fas fa-envelope"></i> Send Email Alerts
+                                </button>
+                                <button type="button" class="btn btn-outline-warning me-2" onclick="sendAlerts('slack')">
+                                    <i class="fab fa-slack"></i> Send Slack Alerts
+                                </button>
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-play"></i> Start Security Scan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle"></i> Scan Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6>What will be scanned:</h6>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-check text-success"></i> EC2 Security Groups</li>
+                    <li><i class="fas fa-check text-success"></i> S3 Bucket Policies</li>
+                    <li><i class="fas fa-check text-success"></i> IAM Users & Roles</li>
+                    <li><i class="fas fa-check text-success"></i> CloudTrail Events</li>
+                    <li><i class="fas fa-check text-success"></i> GuardDuty Findings</li>
+                </ul>
+                
+                <hr>
+                
+                <h6>Prerequisites:</h6>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-key text-warning"></i> AWS Credentials configured</li>
+                    <li><i class="fas fa-shield-alt text-warning"></i> Appropriate IAM permissions</li>
+                    <li><i class="fas fa-globe text-warning"></i> Network access to AWS APIs</li>
+                </ul>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-lightbulb"></i>
+                    <strong>Tip:</strong> Ensure your AWS credentials have the necessary permissions to read security-related resources.
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history"></i> Recent Scans
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center text-muted">
+                    <i class="fas fa-clock fa-2x mb-2"></i>
+                    <p>No recent scans found</p>
+                    <small>Scan history will appear here after running scans</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scan Progress Modal -->
+<div class="modal fade" id="scanProgressModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-spinner fa-spin"></i> Security Scan in Progress
+                </h5>
+            </div>
+            <div class="modal-body">
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" style="width: 0%"></div>
+                </div>
+                
+                <div id="scanSteps">
+                    <div class="scan-step">
+                        <i class="fas fa-circle text-muted"></i> Initializing AWS collector...
+                    </div>
+                    <div class="scan-step">
+                        <i class="fas fa-circle text-muted"></i> Collecting EC2 security data...
+                    </div>
+                    <div class="scan-step">
+                        <i class="fas fa-circle text-muted"></i> Collecting S3 security data...
+                    </div>
+                    <div class="scan-step">
+                        <i class="fas fa-circle text-muted"></i> Collecting IAM security data...
+                    </div>
+                    <div class="scan-step">
+                        <i class="fas fa-circle text-muted"></i> Collecting CloudTrail data...
+                    </div>
+                    <div class="scan-step">
+                        <i class="fas fa-circle text-muted"></i> Collecting GuardDuty findings...
+                    </div>
+                    <div class="scan-step">
+                        <i class="fas fa-circle text-muted"></i> Running rule engine...
+                    </div>
+                    <div class="scan-step">
+                        <i class="fas fa-circle text-muted"></i> Generating alerts...
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Function to send alerts
+function sendAlerts(type) {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    
+    // Show loading state
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    button.disabled = true;
+    
+    // Send alerts
+    fetch('/api/send-alerts', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type: type })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            const result = data.results[type];
+            if (result && result.status === 'success') {
+                alert(`✅ ${type.toUpperCase()} alerts sent successfully! (${result.sent}/${result.total} alerts)`);
+            } else {
+                alert(`❌ ${type.toUpperCase()} alerts failed: ${result ? result.message : 'Unknown error'}`);
+            }
+        } else {
+            alert(`❌ Failed to send ${type} alerts: ${data.message}`);
+        }
+    })
+    .catch(error => {
+        alert(`❌ Error sending ${type} alerts: ${error.message}`);
+    })
+    .finally(() => {
+        // Restore button state
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+// Show progress modal when form is submitted
+document.querySelector('form').addEventListener('submit', function(e) {
+    const modal = new bootstrap.Modal(document.getElementById('scanProgressModal'));
+    modal.show();
+    
+    // Simulate progress updates
+    let progress = 0;
+    const steps = document.querySelectorAll('.scan-step');
+    const progressBar = document.querySelector('.progress-bar');
+    
+    const interval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 100) progress = 100;
+        
+        progressBar.style.width = progress + '%';
+        
+        // Update step indicators
+        const currentStep = Math.floor((progress / 100) * steps.length);
+        steps.forEach((step, index) => {
+            const icon = step.querySelector('i');
+            if (index < currentStep) {
+                icon.className = 'fas fa-check-circle text-success';
+            } else if (index === currentStep) {
+                icon.className = 'fas fa-spinner fa-spin text-primary';
+            } else {
+                icon.className = 'fas fa-circle text-muted';
+            }
+        });
+        
+        if (progress >= 100) {
+            clearInterval(interval);
+            setTimeout(() => {
+                modal.hide();
+                window.location.href = '/alerts';
+            }, 1000);
+        }
+    }, 500);
+});
+</script>
+{% endblock %}

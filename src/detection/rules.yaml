@@ -1,15 +1,262 @@
 rules:
 
   #######################################
-  # IAM Misuse / Privilege Escalation (30)
+  # EC2 Security Group Rules (15)
   #######################################
-  - id: IAM-001
-    title: Root account usage
-    description: Detect usage of AWS root account
-    service: IAM
-    condition: event.user == "root"
+  - id: EC2-SG-001
+    title: SSH open to world
+    description: Security group allows SSH (port 22) from anywhere
+    service: EC2
+    condition: sg.cidr == "0.0.0.0/0" and sg.from_port == 22
     severity: CRITICAL
-    remediation: "Disable root keys and use IAM roles."
+    remediation: "Restrict SSH access to specific IP ranges or use VPN/bastion host"
+
+  - id: EC2-SG-002
+    title: RDP open to world
+    description: Security group allows RDP (port 3389) from anywhere
+    service: EC2
+    condition: sg.cidr == "0.0.0.0/0" and sg.from_port == 3389
+    severity: CRITICAL
+    remediation: "Restrict RDP access to specific IP ranges or use VPN"
+
+  - id: EC2-SG-003
+    title: All traffic allowed from anywhere
+    description: Security group allows all protocols and ports from anywhere
+    service: EC2
+    condition: sg.cidr == "0.0.0.0/0" and sg.protocol == "-1"
+    severity: CRITICAL
+    remediation: "Apply least privilege principle - restrict to specific ports and protocols"
+
+  - id: EC2-SG-004
+    title: Database ports open to world
+    description: Security group allows database ports from anywhere
+    service: EC2
+    condition: sg.cidr == "0.0.0.0/0" and sg.from_port in [3306, 5432, 1433, 1521]
+    severity: HIGH
+    remediation: "Restrict database access to application servers only"
+
+  - id: EC2-SG-005
+    title: All ports open to world
+    description: Security group allows all ports from anywhere
+    service: EC2
+    condition: sg.cidr == "0.0.0.0/0" and sg.from_port == 0 and sg.to_port == 65535
+    severity: CRITICAL
+    remediation: "Restrict to specific required ports only"
+
+  - id: EC2-INST-001
+    title: EC2 instance with public IP
+    description: EC2 instance has a public IP address
+    service: EC2
+    condition: instance.public_ip != null
+    severity: MEDIUM
+    remediation: "Use private subnets and load balancers instead of direct public IPs"
+
+  - id: EC2-INST-002
+    title: EC2 instance without IAM role
+    description: EC2 instance has no IAM role attached
+    service: EC2
+    condition: instance.iam_role == null
+    severity: MEDIUM
+    remediation: "Attach least-privilege IAM role to EC2 instance"
+
+  #######################################
+  # S3 Security Rules (20)
+  #######################################
+  - id: S3-ACL-001
+    title: S3 bucket with public ACL
+    description: S3 bucket has public ACL allowing global access
+    service: S3
+    condition: bucket.public_access == true
+    severity: CRITICAL
+    remediation: "Remove public ACL and enable public access block"
+
+  - id: S3-POL-001
+    title: S3 bucket with overly permissive policy
+    description: S3 bucket policy allows access to all principals
+    service: S3
+    condition: bucket.policy.contains("*")
+    severity: CRITICAL
+    remediation: "Restrict bucket policy to specific principals and actions"
+
+  - id: S3-ENC-001
+    title: S3 bucket without encryption
+    description: S3 bucket has no encryption enabled
+    service: S3
+    condition: bucket.encryption == null
+    severity: HIGH
+    remediation: "Enable server-side encryption for the S3 bucket"
+
+  - id: S3-PAB-001
+    title: S3 bucket without public access block
+    description: S3 bucket has no public access block configuration
+    service: S3
+    condition: bucket.public_access_block == null
+    severity: CRITICAL
+    remediation: "Enable all public access block settings"
+
+  - id: S3-PAB-002
+    title: S3 bucket with weak public access block
+    description: S3 bucket has weak public access block settings
+    service: S3
+    condition: bucket.public_access_block.BlockPublicAcls == false or bucket.public_access_block.IgnorePublicAcls == false
+    severity: HIGH
+    remediation: "Enable all public access block settings"
+
+  - id: S3-POL-002
+    title: S3 bucket allows dangerous actions
+    description: S3 bucket policy allows dangerous actions to all principals
+    service: S3
+    condition: bucket.dangerous_action != null
+    severity: CRITICAL
+    remediation: "Remove dangerous actions from bucket policy or restrict to specific principals"
+
+  #######################################
+  # IAM Security Rules (25)
+  #######################################
+  - id: IAM-USER-001
+    title: IAM user with multiple access keys
+    description: IAM user has more than one active access key
+    service: IAM
+    condition: user.active_keys > 1
+    severity: MEDIUM
+    remediation: "Remove unused access keys, keep only one active key per user"
+
+  - id: IAM-USER-002
+    title: IAM user with old access key
+    description: IAM user has access key older than 90 days
+    service: IAM
+    condition: user.key_age_days > 90
+    severity: HIGH
+    remediation: "Rotate access keys regularly (every 90 days)"
+
+  - id: IAM-USER-003
+    title: IAM user without MFA
+    description: IAM user has no MFA device configured
+    service: IAM
+    condition: user.mfa_enabled == false
+    severity: HIGH
+    remediation: "Enable MFA for all IAM users"
+
+  - id: IAM-USER-004
+    title: IAM user with inline policies
+    description: IAM user has inline policies attached
+    service: IAM
+    condition: user.inline_policies != null
+    severity: MEDIUM
+    remediation: "Use managed policies instead of inline policies for better management"
+
+  - id: IAM-ROLE-001
+    title: IAM role with admin access
+    description: IAM role has AdministratorAccess policy attached
+    service: IAM
+    condition: role.admin_access == true
+    severity: CRITICAL
+    remediation: "Apply least privilege principle - use specific policies instead of admin access"
+
+  - id: IAM-ROLE-002
+    title: IAM role with overly permissive trust policy
+    description: IAM role trust policy allows any AWS principal
+    service: IAM
+    condition: role.trust_policy.contains("*")
+    severity: CRITICAL
+    remediation: "Restrict trust policy to specific principals and accounts"
+
+  - id: IAM-ACCOUNT-001
+    title: Weak password policy
+    description: Account has weak password policy (less than 8 characters)
+    service: IAM
+    condition: account.min_password_length < 8
+    severity: HIGH
+    remediation: "Enforce stronger password policy with minimum 8 characters"
+
+  #######################################
+  # CloudTrail Security Rules (15)
+  #######################################
+  - id: CT-ROOT-001
+    title: Root account usage detected
+    description: Root account was used for API calls or console login
+    service: CloudTrail
+    condition: event.user_type == "Root"
+    severity: CRITICAL
+    remediation: "Disable root account access keys and use IAM users/roles"
+
+  - id: CT-HIGH-001
+    title: High-risk action detected
+    description: High-risk action detected in CloudTrail logs
+    service: CloudTrail
+    condition: event.action in ["DeleteBucket", "DeleteUser", "DeleteRole", "StopLogging"]
+    severity: CRITICAL
+    remediation: "Review and validate high-risk actions, implement approval workflows"
+
+  - id: CT-MFA-001
+    title: Console login without MFA
+    description: Console login detected without MFA authentication
+    service: CloudTrail
+    condition: event.action == "ConsoleLogin" and event.mfa == false
+    severity: HIGH
+    remediation: "Enforce MFA for all console logins"
+
+  - id: CT-ACTION-001
+    title: Privilege escalation action
+    description: Action that could lead to privilege escalation detected
+    service: CloudTrail
+    condition: event.action in ["CreateAccessKey", "AttachUserPolicy", "PutUserPolicy", "AssumeRole"]
+    severity: HIGH
+    remediation: "Monitor and validate privilege escalation actions"
+
+  #######################################
+  # GuardDuty Security Rules (10)
+  #######################################
+  - id: GD-CRIT-001
+    title: Critical GuardDuty finding
+    description: GuardDuty detected critical security threat
+    service: GuardDuty
+    condition: guardduty.severity_score >= 8.0
+    severity: CRITICAL
+    remediation: "Immediately investigate and remediate the threat"
+
+  - id: GD-HIGH-001
+    title: High severity GuardDuty finding
+    description: GuardDuty detected high severity security threat
+    service: GuardDuty
+    condition: guardduty.severity_score >= 6.0 and guardduty.severity_score < 8.0
+    severity: HIGH
+    remediation: "Investigate and remediate the security threat"
+
+  - id: GD-MED-001
+    title: Medium severity GuardDuty finding
+    description: GuardDuty detected medium severity security threat
+    service: GuardDuty
+    condition: guardduty.severity_score >= 4.0 and guardduty.severity_score < 6.0
+    severity: MEDIUM
+    remediation: "Review and address the security finding"
+
+  - id: GD-CRYPTO-001
+    title: Cryptocurrency mining detected
+    description: GuardDuty detected cryptocurrency mining activity
+    service: GuardDuty
+    condition: guardduty.finding_type.contains("CryptoCurrency")
+    severity: CRITICAL
+    remediation: "Isolate affected instances and investigate compromise"
+
+  - id: GD-UNAUTH-001
+    title: Unauthorized access detected
+    description: GuardDuty detected unauthorized access
+    service: GuardDuty
+    condition: guardduty.finding_type.contains("UnauthorizedAccess")
+    severity: CRITICAL
+    remediation: "Immediately revoke access and investigate breach"
+
+  #######################################
+  # Collection Error Rules (5)
+  #######################################
+  - id: COLLECT-001
+    title: AWS collection error
+    description: Error occurred during AWS data collection
+    service: COLLECTION
+    condition: event_type == "COLLECTION_ERROR"
+    severity: CRITICAL
+    remediation: "Check AWS credentials and permissions, review error logs"
 
   - id: IAM-002
     title: Root account API key usage

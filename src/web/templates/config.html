@@ -1,0 +1,908 @@
+{% extends "base.html" %}
+
+{% block title %}Configuration - CloudHawk{% endblock %}
+
+{% block content %}
+<style>
+/* Dark mode styles for config page */
+[data-theme="dark"] .card {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .card-header {
+    background-color: var(--bg-tertiary) !important;
+    border-bottom-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .form-control, [data-theme="dark"] .form-select {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .form-control:focus, [data-theme="dark"] .form-select:focus {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--bs-primary) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+}
+
+[data-theme="dark"] .accordion-item {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .accordion-button {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .accordion-button:not(.collapsed) {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .accordion-button:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+}
+
+[data-theme="dark"] .accordion-body {
+    background-color: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .alert {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .alert-warning {
+    background-color: rgba(255, 193, 7, 0.1) !important;
+    border-color: rgba(255, 193, 7, 0.3) !important;
+    color: #ffc107 !important;
+}
+
+[data-theme="dark"] .btn-outline-secondary {
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .btn-outline-secondary:hover {
+    background-color: var(--bg-tertiary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .btn-outline-info {
+    color: #0dcaf0 !important;
+    border-color: #0dcaf0 !important;
+}
+
+[data-theme="dark"] .btn-outline-info:hover {
+    background-color: #0dcaf0 !important;
+    color: #000 !important;
+}
+
+[data-theme="dark"] .btn-outline-danger {
+    color: #dc3545 !important;
+    border-color: #dc3545 !important;
+}
+
+[data-theme="dark"] .btn-outline-danger:hover {
+    background-color: #dc3545 !important;
+    color: #fff !important;
+}
+
+[data-theme="dark"] .btn-outline-primary {
+    color: #0d6efd !important;
+    border-color: #0d6efd !important;
+}
+
+[data-theme="dark"] .btn-outline-primary:hover {
+    background-color: #0d6efd !important;
+    color: #fff !important;
+}
+
+[data-theme="dark"] .form-text {
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .text-muted {
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .text-primary {
+    color: #0d6efd !important;
+}
+
+[data-theme="dark"] .text-warning {
+    color: #ffc107 !important;
+}
+
+[data-theme="dark"] .text-info {
+    color: #0dcaf0 !important;
+}
+
+[data-theme="dark"] .text-danger {
+    color: #dc3545 !important;
+}
+
+[data-theme="dark"] .text-secondary {
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] code {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+}
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <h1 class="h3 mb-4">
+            <i class="fas fa-sliders-h"></i> Configuration
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cog"></i> CloudHawk Configuration
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="configForm" onsubmit="saveConfiguration(event)">
+                    <div class="row g-3">
+                        <!-- AWS Configuration -->
+                        <div class="col-12">
+                            <h6 class="text-primary">
+                                <i class="fas fa-cloud"></i> AWS Configuration
+                            </h6>
+                            <hr>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="aws_region" class="form-label">Default Region</label>
+                            <select class="form-select" id="aws_region" name="aws.default_region">
+                                <option value="us-east-1" {% if config.aws and config.aws.default_region == 'us-east-1' %}selected{% endif %}>US East (N. Virginia)</option>
+                                <option value="us-west-2" {% if config.aws and config.aws.default_region == 'us-west-2' %}selected{% endif %}>US West (Oregon)</option>
+                                <option value="eu-west-1" {% if config.aws and config.aws.default_region == 'eu-west-1' %}selected{% endif %}>Europe (Ireland)</option>
+                                <option value="ap-southeast-1" {% if config.aws and config.aws.default_region == 'ap-southeast-1' %}selected{% endif %}>Asia Pacific (Singapore)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="max_events" class="form-label">Max Events per Service</label>
+                            <input type="number" class="form-control" id="max_events" name="aws.max_events_per_service" 
+                                   value="{{ config.aws.max_events_per_service if config.aws else 1000 }}" min="100" max="10000">
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Services to Monitor</label>
+                            <div class="row">
+                                {% for service in ['ec2', 's3', 'iam', 'cloudtrail', 'guardduty'] %}
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="service_{{ service }}" 
+                                               name="aws.services" value="{{ service }}" 
+                                               {% if config.aws and service in config.aws.services %}checked{% endif %}>
+                                        <label class="form-check-label" for="service_{{ service }}">
+                                            {{ service.upper() }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Detection Configuration -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-primary">
+                                <i class="fas fa-search"></i> Detection Configuration
+                            </h6>
+                            <hr>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="threads" class="form-label">Rule Engine Threads</label>
+                            <input type="number" class="form-control" id="threads" name="detection.rule_engine.threads" 
+                                   value="{{ config.detection.rule_engine.threads if config.detection and config.detection.rule_engine else 4 }}" min="1" max="16">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="chunk_size" class="form-label">Chunk Size</label>
+                            <input type="number" class="form-control" id="chunk_size" name="detection.rule_engine.chunk_size" 
+                                   value="{{ config.detection.rule_engine.chunk_size if config.detection and config.detection.rule_engine else 100 }}" min="10" max="1000">
+                        </div>
+                        
+                        <!-- Alerting Configuration -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-primary">
+                                <i class="fas fa-bell"></i> Alerting Configuration
+                            </h6>
+                            <hr>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="alerting_enabled" 
+                                       name="alerting.enabled" {% if config.alerting and config.alerting.enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="alerting_enabled">
+                                    Enable Alerting
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="slack_webhook" class="form-label">Slack Webhook URL</label>
+                            <input type="url" class="form-control" id="slack_webhook" name="alerting.channels.slack.webhook_url" 
+                                   value="{{ config.alerting.channels.slack.webhook_url if config.alerting and config.alerting.channels and config.alerting.channels.slack else '' }}" 
+                                   placeholder="https://hooks.slack.com/services/...">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="slack_channel" class="form-label">Slack Channel</label>
+                            <input type="text" class="form-control" id="slack_channel" name="alerting.channels.slack.channel" 
+                                   value="{{ config.alerting.channels.slack.channel if config.alerting and config.alerting.channels and config.alerting.channels.slack else '#security-alerts' }}">
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="email_enabled" 
+                                       name="alerting.channels.email.enabled" {% if config.alerting and config.alerting.channels and config.alerting.channels.email and config.alerting.channels.email.enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="email_enabled">
+                                    <strong>Enable Email Alerts</strong>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="smtp_server" class="form-label">SMTP Server</label>
+                            <input type="text" class="form-control" id="smtp_server" name="alerting.channels.email.smtp_server" 
+                                   value="{{ config.alerting.channels.email.smtp_server if config.alerting and config.alerting.channels and config.alerting.channels.email else '' }}" 
+                                   placeholder="smtp.gmail.com">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="smtp_port" class="form-label">SMTP Port</label>
+                            <input type="number" class="form-control" id="smtp_port" name="alerting.channels.email.smtp_port" 
+                                   value="{{ config.alerting.channels.email.smtp_port if config.alerting and config.alerting.channels and config.alerting.channels.email else 587 }}" min="1" max="65535">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="email_username" class="form-label">Email Username</label>
+                            <input type="email" class="form-control" id="email_username" name="alerting.channels.email.username" 
+                                   value="{{ config.alerting.channels.email.username if config.alerting and config.alerting.channels and config.alerting.channels.email else '' }}">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="email_password" class="form-label">Email Password/App Password</label>
+                            <input type="password" class="form-control" id="email_password" name="alerting.channels.email.password" 
+                                   value="{{ config.alerting.channels.email.password if config.alerting and config.alerting.channels and config.alerting.channels.email else '' }}"
+                                   placeholder="Use App Password for Gmail">
+                            <small class="form-text text-muted">
+                                <strong>Gmail:</strong> Use App Password (not regular password)<br>
+                                <strong>Outlook:</strong> Use regular password or App Password<br>
+                                <strong>Corporate:</strong> Use your email password
+                            </small>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="from_email" class="form-label">From Email Address</label>
+                            <input type="email" class="form-control" id="from_email" name="alerting.channels.email.from_email" 
+                                   value="{{ config.alerting.channels.email.from_email if config.alerting and config.alerting.channels and config.alerting.channels.email and config.alerting.channels.email.from_email else (config.alerting.channels.email.username if config.alerting and config.alerting.channels and config.alerting.channels.email else '') }}"
+                                   placeholder="sender@example.com">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="to_email" class="form-label">To Email Address</label>
+                            <input type="email" class="form-control" id="to_email" name="alerting.channels.email.to_email" 
+                                   value="{{ config.alerting.channels.email.to_email if config.alerting and config.alerting.channels and config.alerting.channels.email and config.alerting.channels.email.to_email else (config.alerting.channels.email.username if config.alerting and config.alerting.channels and config.alerting.channels.email else '') }}"
+                                   placeholder="recipient@example.com">
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label class="form-label">Quick Setup for Common Providers:</label>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="setupGmail()">
+                                        <i class="fab fa-google"></i> Gmail
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="setupOutlook()">
+                                        <i class="fab fa-microsoft"></i> Outlook
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setupCorporate()">
+                                        <i class="fas fa-building"></i> Corporate
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <button type="button" class="btn btn-outline-info me-2" onclick="testEmail()">
+                                    <i class="fas fa-envelope"></i> Test Email
+                                </button>
+                                <button type="button" class="btn btn-outline-warning me-2" onclick="testSave()">
+                                    <i class="fas fa-flask"></i> Enable Email
+                                </button>
+                                <button type="button" class="btn btn-outline-success me-2" onclick="testEmailOnly()">
+                                    <i class="fas fa-paper-plane"></i> Test Email
+                                </button>
+                                <button type="button" class="btn btn-outline-dark me-2" onclick="debugEmailConfig()">
+                                    <i class="fas fa-bug"></i> Debug Email
+                                </button>
+                                <button type="button" class="btn btn-outline-danger me-2" onclick="sendAlertFromConfig()">
+                                    <i class="fas fa-exclamation-triangle"></i> Send Alert
+                                </button>
+                                <button type="button" class="btn btn-outline-warning me-2" onclick="clearTestConfig()">
+                                    <i class="fas fa-trash"></i> Clear Test Config
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary me-2" onclick="resetConfig()">
+                                    <i class="fas fa-undo"></i> Reset
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Configuration
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle"></i> Configuration Help
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6>AWS Configuration:</h6>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-check text-success"></i> Set your preferred AWS region</li>
+                    <li><i class="fas fa-check text-success"></i> Configure max events per service</li>
+                    <li><i class="fas fa-check text-success"></i> Select services to monitor</li>
+                </ul>
+                
+                <h6>Detection Configuration:</h6>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-cog text-info"></i> Adjust thread count for performance</li>
+                    <li><i class="fas fa-cog text-info"></i> Set chunk size for processing</li>
+                </ul>
+                
+                <h6>Alerting Configuration:</h6>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-bell text-warning"></i> Configure Slack notifications</li>
+                    <li><i class="fas fa-envelope text-warning"></i> Set up email alerts</li>
+                </ul>
+                
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-question-circle"></i> Email Setup Guide
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="accordion" id="emailGuideAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="gmailHeader">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#gmailGuide">
+                                        <i class="fab fa-google text-danger me-2"></i> Gmail Setup
+                                    </button>
+                                </h2>
+                                <div id="gmailGuide" class="accordion-collapse collapse" data-bs-parent="#emailGuideAccordion">
+                                    <div class="accordion-body">
+                                        <ol>
+                                            <li>Enable 2-Factor Authentication in your Google Account</li>
+                                            <li>Go to <strong>Google Account Settings</strong> → <strong>Security</strong></li>
+                                            <li>Click <strong>"App passwords"</strong></li>
+                                            <li>Generate a new app password for "CloudHawk"</li>
+                                            <li>Use this app password (not your regular Gmail password)</li>
+                                        </ol>
+                                        <p><strong>SMTP Settings:</strong></p>
+                                        <ul>
+                                            <li>Server: <code>smtp.gmail.com</code></li>
+                                            <li>Port: <code>587</code></li>
+                                            <li>Username: Your Gmail address</li>
+                                            <li>Password: App password (16 characters)</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="outlookHeader">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#outlookGuide">
+                                        <i class="fab fa-microsoft text-primary me-2"></i> Outlook/Hotmail Setup
+                                    </button>
+                                </h2>
+                                <div id="outlookGuide" class="accordion-collapse collapse" data-bs-parent="#emailGuideAccordion">
+                                    <div class="accordion-body">
+                                        <ol>
+                                            <li>Go to <strong>Microsoft Account Security</strong></li>
+                                            <li>Enable <strong>"App passwords"</strong> or use your regular password</li>
+                                            <li>If using regular password, enable "Less secure app access"</li>
+                                        </ol>
+                                        <p><strong>SMTP Settings:</strong></p>
+                                        <ul>
+                                            <li>Server: <code>smtp-mail.outlook.com</code></li>
+                                            <li>Port: <code>587</code></li>
+                                            <li>Username: Your Outlook email address</li>
+                                            <li>Password: Your password or app password</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="corporateHeader">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#corporateGuide">
+                                        <i class="fas fa-building text-secondary me-2"></i> Corporate Email Setup
+                                    </button>
+                                </h2>
+                                <div id="corporateGuide" class="accordion-collapse collapse" data-bs-parent="#emailGuideAccordion">
+                                    <div class="accordion-body">
+                                        <ol>
+                                            <li>Contact your IT department for SMTP settings</li>
+                                            <li>Use your corporate email credentials</li>
+                                            <li>May require VPN connection or specific network access</li>
+                                        </ol>
+                                        <p><strong>Common Corporate SMTP Settings:</strong></p>
+                                        <ul>
+                                            <li>Server: <code>smtp.company.com</code> or <code>mail.company.com</code></li>
+                                            <li>Port: <code>587</code> or <code>465</code></li>
+                                            <li>Username: Your corporate email address</li>
+                                            <li>Password: Your corporate email password</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Note:</strong> Configuration changes are applied immediately (live updates enabled).
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-download"></i> Export/Import
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-primary" onclick="exportConfig()">
+                        <i class="fas fa-download"></i> Export Configuration
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="importConfig()">
+                        <i class="fas fa-upload"></i> Import Configuration
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('configForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Collect form data
+    const formData = new FormData(this);
+    const config = {};
+    
+    // Convert form data to nested object
+    for (let [key, value] of formData.entries()) {
+        const keys = key.split('.');
+        let current = config;
+        
+        for (let i = 0; i < keys.length - 1; i++) {
+            if (!current[keys[i]]) {
+                current[keys[i]] = {};
+            }
+            current = current[keys[i]];
+        }
+        
+        current[keys[keys.length - 1]] = value;
+    }
+    
+    // Handle checkboxes
+    const checkboxes = this.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        const keys = checkbox.name.split('.');
+        let current = config;
+        
+        for (let i = 0; i < keys.length - 1; i++) {
+            if (!current[keys[i]]) {
+                current[keys[i]] = {};
+            }
+            current = current[keys[i]];
+        }
+        
+        if (checkbox.checked) {
+            if (keys[keys.length - 1] === 'services') {
+                if (!current.services) current.services = [];
+                current.services.push(checkbox.value);
+            } else {
+                current[keys[keys.length - 1]] = true;
+            }
+        } else {
+            if (keys[keys.length - 1] !== 'services') {
+                current[keys[keys.length - 1]] = false;
+            }
+        }
+    });
+    
+    // Debug: Log what we're sending
+    console.log('DEBUG: Sending config:', config);
+    
+    // Send to server
+    fetch('/api/config', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(config)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('Configuration saved successfully!');
+        } else {
+            alert('Error saving configuration: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving configuration. Please try again.');
+    });
+});
+
+function resetConfig() {
+    if (confirm('Are you sure you want to reset the configuration to default values?')) {
+        window.location.reload();
+    }
+}
+
+function testSave() {
+    // Enable email alerts without overwriting existing settings
+    fetch('/api/test-save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('✅ Email alerts enabled successfully!');
+            // Reload page to see changes
+            window.location.reload();
+        } else {
+            alert('❌ Enable email failed: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('❌ Error enabling email: ' + error.message);
+    });
+}
+
+function testEmailOnly() {
+    // Test email sending without changing configuration
+    fetch('/api/test-email-only', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('✅ Test email sent successfully! Check your inbox.');
+        } else {
+            alert('❌ Test email failed: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('❌ Error sending test email: ' + error.message);
+    });
+}
+
+function debugEmailConfig() {
+    // Debug email configuration
+    fetch('/api/debug-email-config', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            let message = '📧 Email Configuration Debug:\n\n';
+            message += `Email Enabled: ${data.email_enabled}\n`;
+            message += `Alerting Enabled: ${data.alerting_enabled}\n`;
+            message += `All Required Fields Present: ${data.all_required_present}\n\n`;
+            
+            if (data.missing_fields.length > 0) {
+                message += `❌ Missing Fields: ${data.missing_fields.join(', ')}\n\n`;
+            }
+            
+            if (Object.keys(data.present_fields).length > 0) {
+                message += `✅ Present Fields:\n`;
+                for (const [field, value] of Object.entries(data.present_fields)) {
+                    message += `  ${field}: ${value}\n`;
+                }
+            }
+            
+            alert(message);
+        } else {
+            alert('❌ Debug failed: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('❌ Error debugging email config: ' + error.message);
+    });
+}
+
+function sendAlertFromConfig() {
+    // Send alert using current configuration
+    fetch('/api/send-alerts', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type: 'email' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            const result = data.results.email;
+            if (result && result.status === 'success') {
+                alert(`✅ Alert sent successfully! (${result.sent}/${result.total} alerts)`);
+            } else {
+                alert(`❌ Alert failed: ${result ? result.message : 'Unknown error'}`);
+            }
+        } else {
+            alert(`❌ Failed to send alert: ${data.message}`);
+        }
+    })
+    .catch(error => {
+        alert(`❌ Error sending alert: ${error.message}`);
+    });
+}
+
+function clearTestConfig() {
+    // Clear test configuration and reset to empty values
+    if (confirm('Are you sure you want to clear the test configuration? This will remove all email settings.')) {
+        fetch('/api/clear-test-config', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('✅ Test configuration cleared! Please configure your real email settings.');
+                window.location.reload();
+            } else {
+                alert('❌ Failed to clear test config: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('❌ Error clearing test config: ' + error.message);
+        });
+    }
+}
+
+function saveConfiguration(event) {
+    // Prevent default form submission
+    event.preventDefault();
+    
+    // Collect all form data
+    const formData = new FormData(event.target);
+    const configData = {};
+    
+    // Convert FormData to object
+    for (let [key, value] of formData.entries()) {
+        configData[key] = value;
+    }
+    
+    console.log('Saving configuration:', configData);
+    
+    // Send to backend
+    fetch('/api/config', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(configData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('✅ Configuration saved successfully!');
+            // Reload page to show updated configuration
+            window.location.reload();
+        } else {
+            alert('❌ Failed to save configuration: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('❌ Error saving configuration: ' + error.message);
+    });
+}
+
+function testEmail() {
+    // Collect email configuration from form
+    const emailConfig = {
+        enabled: true,
+        smtp_server: document.getElementById('smtp_server').value,
+        smtp_port: parseInt(document.getElementById('smtp_port').value) || 587,
+        username: document.getElementById('email_username').value,
+        password: document.getElementById('email_password').value,
+        from_email: document.getElementById('from_email').value,
+        to_email: document.getElementById('to_email').value
+    };
+    
+    // Validate required fields
+    if (!emailConfig.smtp_server || !emailConfig.username || !emailConfig.password || !emailConfig.from_email || !emailConfig.to_email) {
+        alert('Please fill in all required email fields (SMTP Server, Username, Password, From Email, To Email) before testing.');
+        return;
+    }
+    
+    // Show loading state
+    const testButton = document.querySelector('button[onclick="testEmail()"]');
+    const originalText = testButton.innerHTML;
+    testButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+    testButton.disabled = true;
+    
+    // Send test email request
+    fetch('/api/test-email', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailConfig)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('✅ Test email sent successfully! Check your inbox.');
+        } else {
+            alert('❌ Email test failed: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('❌ Email test failed: ' + error.message);
+    })
+    .finally(() => {
+        // Restore button state
+        testButton.innerHTML = originalText;
+        testButton.disabled = false;
+    });
+}
+
+function setupGmail() {
+    document.getElementById('smtp_server').value = 'smtp.gmail.com';
+    document.getElementById('smtp_port').value = '587';
+    document.getElementById('email_password').placeholder = 'Enter your Gmail App Password (16 characters)';
+    
+    // Auto-fill from_email and to_email with username if it's already filled
+    const username = document.getElementById('email_username').value;
+    if (username) {
+        document.getElementById('from_email').value = username;
+        document.getElementById('to_email').value = username;
+    }
+    
+    alert('Gmail Setup:\n\n1. Enable 2-Factor Authentication\n2. Go to Google Account → Security → App passwords\n3. Generate app password for "CloudHawk"\n4. Use the 16-character app password (not your regular password)');
+}
+
+function setupOutlook() {
+    document.getElementById('smtp_server').value = 'smtp-mail.outlook.com';
+    document.getElementById('smtp_port').value = '587';
+    document.getElementById('email_password').placeholder = 'Enter your Outlook password or app password';
+    
+    // Auto-fill from_email and to_email with username if it's already filled
+    const username = document.getElementById('email_username').value;
+    if (username) {
+        document.getElementById('from_email').value = username;
+        document.getElementById('to_email').value = username;
+    }
+    
+    alert('Outlook Setup:\n\n1. Go to Microsoft Account Security\n2. Enable "App passwords" or use regular password\n3. If using regular password, enable "Less secure app access"');
+}
+
+function setupCorporate() {
+    document.getElementById('smtp_server').value = '';
+    document.getElementById('smtp_port').value = '587';
+    document.getElementById('email_password').placeholder = 'Enter your corporate email password';
+    
+    // Auto-fill from_email and to_email with username if it's already filled
+    const username = document.getElementById('email_username').value;
+    if (username) {
+        document.getElementById('from_email').value = username;
+        document.getElementById('to_email').value = username;
+    }
+    
+    alert('Corporate Email Setup:\n\n1. Contact your IT department for SMTP settings\n2. Common servers: smtp.company.com or mail.company.com\n3. Use your corporate email credentials\n4. May require VPN connection');
+}
+
+function exportConfig() {
+    fetch('/api/config')
+        .then(response => response.json())
+        .then(data => {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'cloudhawk-config-' + new Date().toISOString().slice(0, 10) + '.json';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        })
+        .catch(error => {
+            console.error('Error exporting config:', error);
+            alert('Error exporting configuration. Please try again.');
+        });
+}
+
+function importConfig() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const config = JSON.parse(e.target.result);
+                    
+                    // Update form fields
+                    updateFormFields(config);
+                    
+                    alert('Configuration imported successfully!');
+                } catch (error) {
+                    alert('Error parsing configuration file. Please check the file format.');
+                }
+            };
+            reader.readAsText(file);
+        }
+    };
+    input.click();
+}
+
+function updateFormFields(config) {
+    // Update form fields based on imported config
+    // This is a simplified version - you might want to implement more comprehensive field mapping
+    if (config && config.aws) {
+        if (config.aws.default_region) {
+            document.getElementById('aws_region').value = config.aws.default_region;
+        }
+        if (config.aws.max_events_per_service) {
+            document.getElementById('max_events').value = config.aws.max_events_per_service;
+        }
+    }
+    
+    // Add more field updates as needed
+}
+</script>
+{% endblock %}

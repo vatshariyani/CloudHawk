@@ -1,23 +1,14 @@
 """
-CloudHawk AWS Collector
-Collects metadata and logs from AWS services:
-- EC2 Instances & Security Groups
-- S3 Buckets & Policies
-- IAM Users & Roles
-- CloudTrail Events
-
-- EKS Audit Logs
-- Application Logs (CloudWatch)
-- AWS Config Changes
-- CloudTrail Events
-- S3 Access Logs
-- VPC Flow Logs
-- CloudWatch Logs
-- GuardDuty Findings
-- Inspector Findings
-- System Logs (via SSM)
-- ALB/ELB Access Logs
-- WAF Logs
+CloudHawk AWS Security Collector
+Collects and parses security-relevant data from AWS services:
+- IAM Users, Roles, Policies (privilege escalation detection)
+- S3 Buckets & Policies (data exposure detection)
+- EC2 Security Groups (network security)
+- CloudTrail Events (audit trail analysis)
+- GuardDuty Findings (threat detection)
+- VPC Flow Logs (network anomalies)
+- CloudWatch Logs (application security)
+- AWS Config (configuration drift)
 
 Requires AWS credentials (from `aws configure` or IAM role).
 """
@@ -26,616 +17,1042 @@ import boto3
 import json
 import datetime
 import os
+import logging
+from typing import List, Dict, Any, Optional
+from botocore.exceptions import ClientError, NoCredentialsError
 
 class AWSCollector:
-    def __init__(self, region="us-east-1"):
-        self.ec2 = boto3.client("ec2", region_name=region)
-        self.s3 = boto3.client("s3", region_name=region)
-        self.iam = boto3.client("iam", region_name=region)
-        self.cloudtrail = boto3.client("cloudtrail", region_name=region)
-        self.logs = boto3.client("logs", region_name=region) #cloudwatch logs
-        self.ssm = boto3.client("ssm", region_name=region) #system logs
-        self.config = boto3.client("config", region_name=region)      # AWS Config
-        self.guardduty = boto3.client("guardduty", region_name=region)
-        self.inspector = boto3.client("inspector2", region_name=region)  # Inspector v2
-        self.elb = boto3.client("elbv2", region_name=region)          # ALB/NLB Logs
-        self.waf = boto3.client("wafv2", region_name=region)          # WAF Logs
-        self.eks = boto3.client("eks", region_name=region) 
-
-    def collect_ec2(self):
-        """Fetch all EC2 instances & security groups"""
-        events = []
+    def __init__(self, region="us-east-1", max_events: int = 1000):
+        """
+        Initialize AWS Security Collector
+        
+        Args:
+            region: AWS region to collect from
+            max_events: Maximum number of events to collect per service
+        """
+        self.region = region
+        self.max_events = max_events
+        self.logger = logging.getLogger(__name__)
+        
         try:
-            sgs = self.ec2.describe_security_groups()
-            for sg in sgs.get("SecurityGroups", []):
+            # Initialize AWS clients
+            self.ec2 = boto3.client("ec2", region_name=region)
+            self.s3 = boto3.client("s3", region_name=region)
+            self.iam = boto3.client("iam", region_name=region)
+            self.cloudtrail = boto3.client("cloudtrail", region_name=region)
+            self.logs = boto3.client("logs", region_name=region)
+            self.guardduty = boto3.client("guardduty", region_name=region)
+            self.inspector = boto3.client("inspector2", region_name=region)
+            self.config = boto3.client("config", region_name=region)
+            self.kms = boto3.client("kms", region_name=region)
+            
+            # Test credentials
+            self._test_credentials()
+            
+        except NoCredentialsError:
+            raise Exception("AWS credentials not found. Please configure AWS CLI or set environment variables.")
+        except Exception as e:
+            raise Exception(f"Failed to initialize AWS clients: {e}")
+    
+    def _test_credentials(self):
+        """Test AWS credentials by making a simple API call"""
+        try:
+            self.iam.list_users(MaxItems=1)
+            self.logger.info("AWS credentials validated successfully")
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'AccessDenied':
+                self.logger.warning("AWS credentials have limited permissions")
+            else:
+                raise Exception(f"AWS credential test failed: {e}")
+    
+    def _create_security_event(self, source: str, resource_id: str, event_type: str, 
+                             severity: str, description: str, raw_event: Dict, 
+                             additional_fields: Dict = None) -> Dict:
+        """Create standardized security event"""
+        event = {
+            "timestamp": datetime.datetime.utcnow().isoformat(),
+            "source": source,
+            "resource_id": resource_id,
+            "event_type": event_type,
+            "severity": severity,
+            "description": description,
+            "raw_event": raw_event,
+            "region": self.region
+        }
+        
+        if additional_fields:
+            event.update(additional_fields)
+            
+        return event 
+
+    def collect_ec2_security(self) -> List[Dict]:
+        """Collect EC2 security groups and instances for security analysis"""
+        events = []
+        
+        try:
+            # Collect Security Groups
+            sgs_response = self.ec2.describe_security_groups()
+            for sg in sgs_response.get("SecurityGroups", []):
+                sg_id = sg.get("GroupId")
+                sg_name = sg.get("GroupName")
+                
+                # Analyze each security group rule
                 for rule in sg.get("IpPermissions", []):
-                    cidrs = [ip.get("CidrIp") for ip in rule.get("IpRanges", []) if "CidrIp" in ip]
-                    for cidr in cidrs:
-                        severity = "LOW"
-                        if rule.get("FromPort") in [22, 3389] and cidr == "0.0.0.0/0":
-                            severity = "HIGH"
-                        events.append({
-                            "timestamp": datetime.datetime.utcnow().isoformat(),
-                            "source": "AWS_EC2",
-                            "resource_id": sg.get("GroupId"),
-                            "event_type": "SECURITY_GROUP",
-                            "severity": severity,
-                            "description": f"Security group {sg.get('GroupName')} allows {rule.get('IpProtocol')} "
-                                           f"from {cidr} on ports {rule.get('FromPort')}-{rule.get('ToPort')}",
-                            "raw_event": sg,
-                            # Add rule-compatible fields
-                            "sg": {
-                                "name": sg.get("GroupName"),
-                                "id": sg.get("GroupId"),
-                                "rules": f"{rule.get('IpProtocol')}/{rule.get('FromPort')}-{rule.get('ToPort')},{cidr}"
+                    protocol = rule.get("IpProtocol", "tcp")
+                    from_port = rule.get("FromPort")
+                    to_port = rule.get("ToPort")
+                    
+                    # Check for dangerous open rules
+                    for ip_range in rule.get("IpRanges", []):
+                        cidr = ip_range.get("CidrIp", "0.0.0.0/0")
+                        
+                        # Determine severity based on rule
+                        severity = self._analyze_security_group_rule(protocol, from_port, to_port, cidr)
+                        
+                        # Create security event
+                        event = self._create_security_event(
+                            source="AWS_EC2_SG",
+                            resource_id=sg_id,
+                            event_type="SECURITY_GROUP_RULE",
+                            severity=severity,
+                            description=f"Security group '{sg_name}' allows {protocol} from {cidr} on ports {from_port}-{to_port}",
+                            raw_event=sg,
+                            additional_fields={
+                                "sg": {
+                                    "name": sg_name,
+                                    "id": sg_id,
+                                    "protocol": protocol,
+                                    "from_port": from_port,
+                                    "to_port": to_port,
+                                    "cidr": cidr,
+                                    "rule_string": f"{protocol}/{from_port}-{to_port},{cidr}"
+                                }
                             }
-                        })
-        except Exception as e:
-            events.append({
-                "timestamp": datetime.datetime.utcnow().isoformat(),
-                "source": "AWS_EC2",
-                "resource_id": "N/A",
-                "event_type": "ERROR",
-                "severity": "CRITICAL",
-                "description": f"⚠️ EC2 collection failed: {e}",
-                "raw_event": {}
-            })
+                        )
+                        events.append(event)
+            
+            # Collect EC2 Instances
+            instances_response = self.ec2.describe_instances()
+            for reservation in instances_response.get("Reservations", []):
+                for instance in reservation.get("Instances", []):
+                    instance_id = instance.get("InstanceId")
+                    
+                    # Check for security issues
+                    security_issues = self._analyze_ec2_instance(instance)
+                    for issue in security_issues:
+                        events.append(issue)
+                        
+        except ClientError as e:
+            error_event = self._create_security_event(
+                source="AWS_EC2",
+                resource_id="N/A",
+                event_type="COLLECTION_ERROR",
+                severity="CRITICAL",
+                description=f"EC2 security collection failed: {e}",
+                raw_event={"error": str(e)}
+            )
+            events.append(error_event)
+            self.logger.error(f"EC2 collection failed: {e}")
+            
+        return events
+    
+    def _analyze_security_group_rule(self, protocol: str, from_port: int, to_port: int, cidr: str) -> str:
+        """Analyze security group rule and return severity"""
+        # Critical: SSH/RDP open to world
+        if cidr == "0.0.0.0/0":
+            if from_port == 22 or (from_port <= 22 <= to_port):  # SSH
+                return "CRITICAL"
+            if from_port == 3389 or (from_port <= 3389 <= to_port):  # RDP
+                return "CRITICAL"
+            if protocol == "-1":  # All protocols
+                return "CRITICAL"
+            if from_port == 0 and to_port == 65535:  # All ports
+                return "CRITICAL"
+            return "HIGH"
+        
+        # High: Database ports open to world
+        if cidr == "0.0.0.0/0" and from_port in [3306, 5432, 1433, 1521]:
+            return "HIGH"
+            
+        # Medium: Other potentially risky ports
+        if cidr == "0.0.0.0/0" and from_port in [21, 23, 25, 53, 80, 443, 993, 995]:
+            return "MEDIUM"
+            
+        return "LOW"
+    
+    def _analyze_ec2_instance(self, instance: Dict) -> List[Dict]:
+        """Analyze EC2 instance for security issues"""
+        events = []
+        instance_id = instance.get("InstanceId")
+        
+        # Check for public IP
+        if instance.get("PublicIpAddress"):
+            event = self._create_security_event(
+                source="AWS_EC2_INSTANCE",
+                resource_id=instance_id,
+                event_type="PUBLIC_IP",
+                severity="MEDIUM",
+                description=f"EC2 instance {instance_id} has public IP {instance.get('PublicIpAddress')}",
+                raw_event=instance,
+                additional_fields={
+                    "instance": {
+                        "id": instance_id,
+                        "public_ip": instance.get("PublicIpAddress"),
+                        "state": instance.get("State", {}).get("Name"),
+                        "instance_type": instance.get("InstanceType")
+                    }
+                }
+            )
+            events.append(event)
+        
+        # Check for IAM role
+        iam_instance_profile = instance.get("IamInstanceProfile")
+        if not iam_instance_profile:
+            event = self._create_security_event(
+                source="AWS_EC2_INSTANCE",
+                resource_id=instance_id,
+                event_type="NO_IAM_ROLE",
+                severity="MEDIUM",
+                description=f"EC2 instance {instance_id} has no IAM role attached",
+                raw_event=instance,
+                additional_fields={
+                    "instance": {
+                        "id": instance_id,
+                        "state": instance.get("State", {}).get("Name"),
+                        "instance_type": instance.get("InstanceType")
+                    }
+                }
+            )
+            events.append(event)
+            
         return events
 
-    def collect_s3(self):
-        """Fetch S3 buckets and their policies/ACLs, parsed into CloudHawk schema"""
+    def collect_s3_security(self) -> List[Dict]:
+        """Collect S3 buckets and analyze for security issues"""
         events = []
+        
         try:
-            buckets = self.s3.list_buckets()
-            for b in buckets.get("Buckets", []):
-                bucket_name = b["Name"]
-
-                # Base bucket info
-                bucket_info = {"name": bucket_name}
-                severity = "LOW"
-                desc = f"S3 bucket {bucket_name} configuration collected."
-
-                # --- ACL check ---
-                try:
-                    acl = self.s3.get_bucket_acl(Bucket=bucket_name)
-                    bucket_info["acl"] = acl
-                    for grant in acl.get("Grants", []):
-                        if "AllUsers" in str(grant) or "AuthenticatedUsers" in str(grant):
-                            severity = "HIGH"
-                            desc = f"S3 bucket {bucket_name} is publicly accessible!"
-                except Exception:
-                    bucket_info["acl"] = "N/A"
-
-                # --- Bucket policy ---
-                try:
-                    policy = self.s3.get_bucket_policy(Bucket=bucket_name)
-                    bucket_info["policy"] = json.loads(policy["Policy"])
-                except Exception:
-                    bucket_info["policy"] = "N/A"
-
-                # --- Encryption check ---
-                try:
-                    enc = self.s3.get_bucket_encryption(Bucket=bucket_name)
-                    bucket_info["encryption"] = enc
-                except Exception:
-                    bucket_info["encryption"] = "Not enabled"
-                    if severity != "HIGH":  # don’t downgrade if already public
-                        severity = "MEDIUM"
-                        desc = f"S3 bucket {bucket_name} has no encryption enabled."
-
-                # --- Append normalized event with rule-compatible structure ---
-                events.append({
-                    "timestamp": datetime.datetime.utcnow().isoformat(),
-                    "source": "AWS_S3",
-                    "resource_id": bucket_name,
-                    "event_type": "S3_POLICY",
-                    "severity": severity,
-                    "description": desc,
-                    "raw_event": {
-                        "name": bucket_name,
-                        "acl": bucket_info.get("acl"),
-                        "policy": bucket_info.get("policy"),
-                        "encryption": bucket_info.get("encryption")
-                    },
-                    # Add rule-compatible fields
-                    "bucket": {
-                        "name": bucket_name,
-                        "acl": bucket_info.get("acl"),
-                        "policy": bucket_info.get("policy"),
-                        "encryption": bucket_info.get("encryption"),
-                        "publicAccessBlock": bucket_info.get("publicAccessBlock", True),
-                        "logging": bucket_info.get("logging", False),
-                        "versioning": bucket_info.get("versioning", False)
-                    }
-                })
-
+            buckets_response = self.s3.list_buckets()
+            for bucket in buckets_response.get("Buckets", []):
+                bucket_name = bucket["Name"]
+                bucket_events = self._analyze_s3_bucket(bucket_name)
+                events.extend(bucket_events)
+                
+        except ClientError as e:
+            error_event = self._create_security_event(
+                source="AWS_S3",
+                resource_id="N/A",
+                event_type="COLLECTION_ERROR",
+                severity="CRITICAL",
+                description=f"S3 security collection failed: {e}",
+                raw_event={"error": str(e)}
+            )
+            events.append(error_event)
+            self.logger.error(f"S3 collection failed: {e}")
+            
+        return events
+    
+    def _analyze_s3_bucket(self, bucket_name: str) -> List[Dict]:
+        """Analyze individual S3 bucket for security issues"""
+        events = []
+        bucket_info = {"name": bucket_name}
+        
+        try:
+            # Check bucket ACL
+            try:
+                acl_response = self.s3.get_bucket_acl(Bucket=bucket_name)
+                bucket_info["acl"] = acl_response
+                
+                # Check for public access
+                for grant in acl_response.get("Grants", []):
+                    grantee = grant.get("Grantee", {})
+                    if grantee.get("URI") in ["http://acs.amazonaws.com/groups/global/AllUsers", 
+                                            "http://acs.amazonaws.com/groups/global/AuthenticatedUsers"]:
+                        event = self._create_security_event(
+                            source="AWS_S3_ACL",
+                            resource_id=bucket_name,
+                            event_type="PUBLIC_ACCESS",
+                            severity="CRITICAL",
+                            description=f"S3 bucket '{bucket_name}' has public ACL access",
+                            raw_event=acl_response,
+                            additional_fields={
+                                "bucket": {
+                                    "name": bucket_name,
+                                    "acl": acl_response,
+                                    "public_access": True,
+                                    "grantee": grantee
+                                }
+                            }
+                        )
+                        events.append(event)
+                        
+            except ClientError as e:
+                if e.response['Error']['Code'] != 'NoSuchBucket':
+                    bucket_info["acl"] = f"Error: {e}"
+            
+            # Check bucket policy
+            try:
+                policy_response = self.s3.get_bucket_policy(Bucket=bucket_name)
+                policy_doc = json.loads(policy_response["Policy"])
+                bucket_info["policy"] = policy_doc
+                
+                # Analyze policy for security issues
+                policy_issues = self._analyze_bucket_policy(bucket_name, policy_doc)
+                events.extend(policy_issues)
+                
+            except ClientError as e:
+                if e.response['Error']['Code'] != 'NoSuchBucketPolicy':
+                    bucket_info["policy"] = f"Error: {e}"
+                else:
+                    bucket_info["policy"] = None
+            
+            # Check encryption
+            try:
+                encryption_response = self.s3.get_bucket_encryption(Bucket=bucket_name)
+                bucket_info["encryption"] = encryption_response
+            except ClientError as e:
+                if e.response['Error']['Code'] != 'ServerSideEncryptionConfigurationNotFoundError':
+                    bucket_info["encryption"] = f"Error: {e}"
+                else:
+                    bucket_info["encryption"] = None
+                    # No encryption is a security issue
+                    event = self._create_security_event(
+                        source="AWS_S3_ENCRYPTION",
+                        resource_id=bucket_name,
+                        event_type="NO_ENCRYPTION",
+                        severity="HIGH",
+                        description=f"S3 bucket '{bucket_name}' has no encryption enabled",
+                        raw_event=bucket_info,
+                        additional_fields={
+                            "bucket": {
+                                "name": bucket_name,
+                                "encryption": None
+                            }
+                        }
+                    )
+                    events.append(event)
+            
+            # Check public access block
+            try:
+                pab_response = self.s3.get_public_access_block(Bucket=bucket_name)
+                bucket_info["public_access_block"] = pab_response.get("PublicAccessBlockConfiguration", {})
+                
+                pab_config = bucket_info["public_access_block"]
+                if not all([
+                    pab_config.get("BlockPublicAcls", False),
+                    pab_config.get("IgnorePublicAcls", False),
+                    pab_config.get("BlockPublicPolicy", False),
+                    pab_config.get("RestrictPublicBuckets", False)
+                ]):
+                    event = self._create_security_event(
+                        source="AWS_S3_PAB",
+                        resource_id=bucket_name,
+                        event_type="WEAK_PUBLIC_ACCESS_BLOCK",
+                        severity="HIGH",
+                        description=f"S3 bucket '{bucket_name}' has weak public access block settings",
+                        raw_event=pab_response,
+                        additional_fields={
+                            "bucket": {
+                                "name": bucket_name,
+                                "public_access_block": pab_config
+                            }
+                        }
+                    )
+                    events.append(event)
+                    
+            except ClientError as e:
+                if e.response['Error']['Code'] != 'NoSuchPublicAccessBlockConfiguration':
+                    bucket_info["public_access_block"] = f"Error: {e}"
+                else:
+                    bucket_info["public_access_block"] = None
+                    # No public access block is a security issue
+                    event = self._create_security_event(
+                        source="AWS_S3_PAB",
+                        resource_id=bucket_name,
+                        event_type="NO_PUBLIC_ACCESS_BLOCK",
+                        severity="CRITICAL",
+                        description=f"S3 bucket '{bucket_name}' has no public access block configuration",
+                        raw_event=bucket_info,
+                        additional_fields={
+                            "bucket": {
+                                "name": bucket_name,
+                                "public_access_block": None
+                            }
+                        }
+                    )
+                    events.append(event)
+                    
         except Exception as e:
-            print(f"⚠️ S3 collection failed: {e}")
+            self.logger.error(f"Error analyzing bucket {bucket_name}: {e}")
+            
+        return events
+    
+    def _analyze_bucket_policy(self, bucket_name: str, policy_doc: Dict) -> List[Dict]:
+        """Analyze S3 bucket policy for security issues"""
+        events = []
+        
+        try:
+            statements = policy_doc.get("Statement", [])
+            for statement in statements:
+                # Check for overly permissive principals
+                principal = statement.get("Principal", {})
+                if principal == "*" or (isinstance(principal, dict) and "*" in principal.get("AWS", [])):
+                    event = self._create_security_event(
+                        source="AWS_S3_POLICY",
+                        resource_id=bucket_name,
+                        event_type="OVERLY_PERMISSIVE_POLICY",
+                        severity="CRITICAL",
+                        description=f"S3 bucket '{bucket_name}' has policy allowing access to all principals (*)",
+                        raw_event=policy_doc,
+                        additional_fields={
+                            "bucket": {
+                                "name": bucket_name,
+                                "policy": policy_doc,
+                                "statement": statement
+                            }
+                        }
+                    )
+                    events.append(event)
+                
+                # Check for dangerous actions
+                actions = statement.get("Action", [])
+                if isinstance(actions, str):
+                    actions = [actions]
+                    
+                dangerous_actions = ["s3:DeleteBucket", "s3:PutBucketPolicy", "s3:PutBucketAcl"]
+                for action in actions:
+                    if action in dangerous_actions and principal == "*":
+                        event = self._create_security_event(
+                            source="AWS_S3_POLICY",
+                            resource_id=bucket_name,
+                            event_type="DANGEROUS_POLICY_ACTION",
+                            severity="CRITICAL",
+                            description=f"S3 bucket '{bucket_name}' allows dangerous action '{action}' to all principals",
+                            raw_event=policy_doc,
+                            additional_fields={
+                                "bucket": {
+                                    "name": bucket_name,
+                                    "policy": policy_doc,
+                                    "statement": statement,
+                                    "dangerous_action": action
+                                }
+                            }
+                        )
+                        events.append(event)
+                        
+        except Exception as e:
+            self.logger.error(f"Error analyzing bucket policy for {bucket_name}: {e}")
+            
         return events
         
-    def collect_iam(self):
-        """Fetch and normalize IAM users and roles"""
+    def collect_iam_security(self) -> List[Dict]:
+        """Collect IAM users, roles, and policies for security analysis"""
         events = []
-        try:
-            users = self.iam.list_users()
-            roles = self.iam.list_roles()
-
-            for user in users.get("Users", []):
-                events.append({
-                    "timestamp": datetime.datetime.utcnow().isoformat(),
-                    "source": "AWS_IAM",
-                    "resource_id": user.get("UserName"),
-                    "event_type": "IAM_USER",
-                    "severity": "LOW",
-                    "description": f"IAM user {user.get('UserName')} detected.",
-                    "raw_event": user,
-                    # Add rule-compatible fields
-                    "user": {
-                        "name": user.get("UserName"),
-                        "lastActiveDays": 0,  # Would need additional API call to get this
-                        "activeKeys": 0,  # Would need additional API call to get this
-                        "previousCountries": []  # Would need additional logic to track this
-                    }
-                })
-
-            for role in roles.get("Roles", []):
-                events.append({
-                    "timestamp": datetime.datetime.utcnow().isoformat(),
-                    "source": "AWS_IAM",
-                    "resource_id": role.get("RoleName"),
-                    "event_type": "IAM_ROLE",
-                    "severity": "LOW",
-                    "description": f"IAM role {role.get('RoleName')} detected.",
-                    "raw_event": role,
-                    # Add rule-compatible fields
-                    "role": {
-                        "name": role.get("RoleName"),
-                        "trustPolicy": role.get("AssumeRolePolicyDocument", {})
-                    }
-                })
-
-        except Exception as e:
-            print(f"⚠️ IAM collection failed: {e}")
-        return events
         
-    def collect_cloudtrail(self, max_events=100):
-        """Fetch and normalize CloudTrail events with severity rules"""
-        events = []
         try:
-            response = self.cloudtrail.lookup_events(MaxResults=max_events)
-            for e in response.get("Events", []):
+            # Collect IAM Users
+            users_events = self._analyze_iam_users()
+            events.extend(users_events)
+            
+            # Collect IAM Roles
+            roles_events = self._analyze_iam_roles()
+            events.extend(roles_events)
+            
+            # Collect IAM Policies
+            policies_events = self._analyze_iam_policies()
+            events.extend(policies_events)
+            
+        except ClientError as e:
+            error_event = self._create_security_event(
+                source="AWS_IAM",
+                resource_id="N/A",
+                event_type="COLLECTION_ERROR",
+                severity="CRITICAL",
+                description=f"IAM security collection failed: {e}",
+                raw_event={"error": str(e)}
+            )
+            events.append(error_event)
+            self.logger.error(f"IAM collection failed: {e}")
+            
+        return events
+    
+    def _analyze_iam_users(self) -> List[Dict]:
+        """Analyze IAM users for security issues"""
+        events = []
+        
+        try:
+            users_response = self.iam.list_users()
+            for user in users_response.get("Users", []):
+                username = user.get("UserName")
+                user_events = self._analyze_iam_user(username, user)
+                events.extend(user_events)
+                
+        except ClientError as e:
+            self.logger.error(f"Error analyzing IAM users: {e}")
+            
+        return events
+    
+    def _analyze_iam_user(self, username: str, user_data: Dict) -> List[Dict]:
+        """Analyze individual IAM user for security issues"""
+        events = []
+        
+        try:
+            # Check for access keys
+            try:
+                keys_response = self.iam.list_access_keys(UserName=username)
+                access_keys = keys_response.get("AccessKeyMetadata", [])
+                
+                if len(access_keys) > 1:
+                    event = self._create_security_event(
+                        source="AWS_IAM_USER",
+                        resource_id=username,
+                        event_type="MULTIPLE_ACCESS_KEYS",
+                        severity="MEDIUM",
+                        description=f"IAM user '{username}' has {len(access_keys)} access keys (should have max 1)",
+                        raw_event=user_data,
+                        additional_fields={
+                            "user": {
+                                "name": username,
+                                "active_keys": len(access_keys),
+                                "keys": access_keys
+                            }
+                        }
+                    )
+                    events.append(event)
+                
+                # Check for old access keys
+                for key in access_keys:
+                    if key.get("Status") == "Active":
+                        create_date = key.get("CreateDate")
+                        if create_date:
+                            days_old = (datetime.datetime.now(create_date.tzinfo) - create_date).days
+                            if days_old > 90:
+                                event = self._create_security_event(
+                                    source="AWS_IAM_USER",
+                                    resource_id=username,
+                                    event_type="OLD_ACCESS_KEY",
+                                    severity="HIGH",
+                                    description=f"IAM user '{username}' has access key older than 90 days ({days_old} days)",
+                                    raw_event=user_data,
+                                    additional_fields={
+                                        "user": {
+                                            "name": username,
+                                            "key_age_days": days_old,
+                                            "key_id": key.get("AccessKeyId")
+                                        }
+                                    }
+                                )
+                                events.append(event)
+                                
+            except ClientError as e:
+                if e.response['Error']['Code'] != 'AccessDenied':
+                    self.logger.error(f"Error checking access keys for {username}: {e}")
+            
+            # Check for MFA
+            try:
+                mfa_response = self.iam.list_mfa_devices(UserName=username)
+                mfa_devices = mfa_response.get("MFADevices", [])
+                
+                if not mfa_devices:
+                    event = self._create_security_event(
+                        source="AWS_IAM_USER",
+                        resource_id=username,
+                        event_type="NO_MFA",
+                        severity="HIGH",
+                        description=f"IAM user '{username}' has no MFA device configured",
+                        raw_event=user_data,
+                        additional_fields={
+                            "user": {
+                                "name": username,
+                                "mfa_enabled": False
+                            }
+                        }
+                    )
+                    events.append(event)
+                    
+            except ClientError as e:
+                if e.response['Error']['Code'] != 'AccessDenied':
+                    self.logger.error(f"Error checking MFA for {username}: {e}")
+            
+            # Check for inline policies
+            try:
+                inline_policies_response = self.iam.list_user_policies(UserName=username)
+                inline_policies = inline_policies_response.get("PolicyNames", [])
+                
+                if inline_policies:
+                    event = self._create_security_event(
+                        source="AWS_IAM_USER",
+                        resource_id=username,
+                        event_type="INLINE_POLICIES",
+                        severity="MEDIUM",
+                        description=f"IAM user '{username}' has {len(inline_policies)} inline policies",
+                        raw_event=user_data,
+                        additional_fields={
+                            "user": {
+                                "name": username,
+                                "inline_policies": inline_policies
+                            }
+                        }
+                    )
+                    events.append(event)
+                    
+            except ClientError as e:
+                if e.response['Error']['Code'] != 'AccessDenied':
+                    self.logger.error(f"Error checking inline policies for {username}: {e}")
+                    
+        except Exception as e:
+            self.logger.error(f"Error analyzing IAM user {username}: {e}")
+            
+        return events
+    
+    def _analyze_iam_roles(self) -> List[Dict]:
+        """Analyze IAM roles for security issues"""
+        events = []
+        
+        try:
+            roles_response = self.iam.list_roles()
+            for role in roles_response.get("Roles", []):
+                role_name = role.get("RoleName")
+                role_events = self._analyze_iam_role(role_name, role)
+                events.extend(role_events)
+                
+        except ClientError as e:
+            self.logger.error(f"Error analyzing IAM roles: {e}")
+            
+        return events
+    
+    def _analyze_iam_role(self, role_name: str, role_data: Dict) -> List[Dict]:
+        """Analyze individual IAM role for security issues"""
+        events = []
+        
+        try:
+            # Check trust policy
+            trust_policy = role_data.get("AssumeRolePolicyDocument", {})
+            if trust_policy:
+                trust_issues = self._analyze_trust_policy(role_name, trust_policy)
+                events.extend(trust_issues)
+            
+            # Check for overly permissive policies
+            try:
+                attached_policies_response = self.iam.list_attached_role_policies(RoleName=role_name)
+                attached_policies = attached_policies_response.get("AttachedPolicies", [])
+                
+                for policy in attached_policies:
+                    policy_arn = policy.get("PolicyArn", "")
+                    if "AdministratorAccess" in policy_arn:
+                        event = self._create_security_event(
+                            source="AWS_IAM_ROLE",
+                            resource_id=role_name,
+                            event_type="ADMIN_ACCESS",
+                            severity="CRITICAL",
+                            description=f"IAM role '{role_name}' has AdministratorAccess policy attached",
+                            raw_event=role_data,
+                            additional_fields={
+                                "role": {
+                                    "name": role_name,
+                                    "admin_access": True,
+                                    "policy_arn": policy_arn
+                                }
+                            }
+                        )
+                        events.append(event)
+                        
+            except ClientError as e:
+                if e.response['Error']['Code'] != 'AccessDenied':
+                    self.logger.error(f"Error checking attached policies for {role_name}: {e}")
+                    
+        except Exception as e:
+            self.logger.error(f"Error analyzing IAM role {role_name}: {e}")
+            
+        return events
+    
+    def _analyze_trust_policy(self, role_name: str, trust_policy: Dict) -> List[Dict]:
+        """Analyze IAM role trust policy for security issues"""
+        events = []
+        
+        try:
+            statements = trust_policy.get("Statement", [])
+            for statement in statements:
+                principal = statement.get("Principal", {})
+                
+                # Check for overly permissive trust relationships
+                if isinstance(principal, dict):
+                    aws_principals = principal.get("AWS", [])
+                    if isinstance(aws_principals, str):
+                        aws_principals = [aws_principals]
+                    
+                    for aws_principal in aws_principals:
+                        if aws_principal == "*":
+                            event = self._create_security_event(
+                                source="AWS_IAM_ROLE",
+                                resource_id=role_name,
+                                event_type="OVERLY_PERMISSIVE_TRUST",
+                                severity="CRITICAL",
+                                description=f"IAM role '{role_name}' has trust policy allowing any AWS principal (*)",
+                                raw_event=trust_policy,
+                                additional_fields={
+                                    "role": {
+                                        "name": role_name,
+                                        "trust_policy": trust_policy,
+                                        "statement": statement
+                                    }
+                                }
+                            )
+                            events.append(event)
+                            
+        except Exception as e:
+            self.logger.error(f"Error analyzing trust policy for {role_name}: {e}")
+            
+        return events
+    
+    def _analyze_iam_policies(self) -> List[Dict]:
+        """Analyze IAM policies for security issues"""
+        events = []
+        
+        try:
+            # Get account summary for policy analysis
+            try:
+                account_summary = self.iam.get_account_summary()
+                summary_map = account_summary.get("SummaryMap", {})
+                
+                # Check for weak password policy
+                if summary_map.get("MinPasswordLength", 0) < 8:
+                    event = self._create_security_event(
+                        source="AWS_IAM_ACCOUNT",
+                        resource_id="ACCOUNT",
+                        event_type="WEAK_PASSWORD_POLICY",
+                        severity="HIGH",
+                        description=f"Account has weak password policy (min length: {summary_map.get('MinPasswordLength', 0)})",
+                        raw_event=account_summary,
+                        additional_fields={
+                            "account": {
+                                "min_password_length": summary_map.get("MinPasswordLength", 0),
+                                "password_policy": summary_map
+                            }
+                        }
+                    )
+                    events.append(event)
+                    
+            except ClientError as e:
+                if e.response['Error']['Code'] != 'AccessDenied':
+                    self.logger.error(f"Error getting account summary: {e}")
+                    
+        except Exception as e:
+            self.logger.error(f"Error analyzing IAM policies: {e}")
+            
+        return events
+    
+    def collect_cloudtrail_security(self) -> List[Dict]:
+        """Collect CloudTrail events for security analysis"""
+        events = []
+        
+        try:
+            # Get recent CloudTrail events
+            response = self.cloudtrail.lookup_events(
+                MaxResults=min(self.max_events, 50),  # CloudTrail has limits
+                StartTime=datetime.datetime.utcnow() - datetime.timedelta(hours=24),
+                EndTime=datetime.datetime.utcnow()
+            )
+            
+            for event in response.get("Events", []):
                 try:
-                    event = json.loads(e["CloudTrailEvent"])
-                except Exception:
-                    event = e  # fallback if parsing fails
-
-                event_name = event.get("eventName", "CloudTrailEvent")
-                user = event.get("userIdentity", {}).get("arn", "unknown")
-
-                # 🔹 Default severity
-                severity = "LOW"
-
-                # 🔹 Escalate severity based on event type
-                high_risk_events = [
-                    "DeleteBucket", "DeleteUser", "DeleteRole", "DeletePolicy",
-                    "StopLogging", "ConsoleLogin", "TerminateInstances",
-                    "PutBucketPolicy", "CreateAccessKey", "AttachUserPolicy"
-                ]
-                medium_risk_events = [
-                    "UpdateLoginProfile", "CreateUser", "CreateRole", "StartInstances",
-                    "AuthorizeSecurityGroupIngress", "PutBucketAcl"
-                ]
-
-                if event_name in high_risk_events:
-                    severity = "HIGH"
-                elif event_name in medium_risk_events:
-                    severity = "MEDIUM"
-
-                events.append({
-                    "timestamp": event.get("eventTime", datetime.datetime.utcnow().isoformat()),
-                    "source": "AWS_CLOUDTRAIL",
-                    "resource_id": user,
-                    "event_type": event_name,
-                    "severity": severity,
-                    "description": f"CloudTrail event {event_name} by {user}",
-                    "raw_event": event,
-                    # Add rule-compatible fields
+                    cloudtrail_event = json.loads(event.get("CloudTrailEvent", "{}"))
+                    security_event = self._analyze_cloudtrail_event(cloudtrail_event)
+                    if security_event:
+                        events.append(security_event)
+                except json.JSONDecodeError:
+                    continue
+                    
+        except ClientError as e:
+            error_event = self._create_security_event(
+                source="AWS_CLOUDTRAIL",
+                resource_id="N/A",
+                event_type="COLLECTION_ERROR",
+                severity="CRITICAL",
+                description=f"CloudTrail security collection failed: {e}",
+                raw_event={"error": str(e)}
+            )
+            events.append(error_event)
+            self.logger.error(f"CloudTrail collection failed: {e}")
+            
+        return events
+    
+    def _analyze_cloudtrail_event(self, event: Dict) -> Optional[Dict]:
+        """Analyze CloudTrail event for security issues"""
+        event_name = event.get("eventName", "")
+        user_identity = event.get("userIdentity", {})
+        user_type = user_identity.get("type", "")
+        user_arn = user_identity.get("arn", "")
+        
+        # High-risk events
+        high_risk_events = [
+            "DeleteBucket", "DeleteUser", "DeleteRole", "DeletePolicy",
+            "StopLogging", "ConsoleLogin", "TerminateInstances",
+            "PutBucketPolicy", "CreateAccessKey", "AttachUserPolicy",
+            "AssumeRole", "CreateRole", "PutUserPolicy"
+        ]
+        
+        # Check for root account usage
+        if user_type == "Root":
+            return self._create_security_event(
+                source="AWS_CLOUDTRAIL",
+                resource_id=user_arn,
+                event_type="ROOT_ACCOUNT_USAGE",
+                severity="CRITICAL",
+                description=f"Root account used for action: {event_name}",
+                raw_event=event,
+                additional_fields={
                     "event": {
                         "action": event_name,
-                        "user": user,
-                        "mfa": event.get("userIdentity", {}).get("mfaAuthenticated", False),
-                        "authType": event.get("userIdentity", {}).get("type", "unknown"),
-                        "errorCode": event.get("errorCode"),
-                        "region": event.get("awsRegion"),
-                        "sourceIPAddress": event.get("sourceIPAddress")
+                        "user": user_arn,
+                        "user_type": user_type,
+                        "mfa": user_identity.get("mfaAuthenticated", False),
+                        "source_ip": event.get("sourceIPAddress"),
+                        "region": event.get("awsRegion")
                     }
-                })
-
-        except Exception as e:
-            print(f"⚠️ CloudTrail collection failed: {e}")
-        return events
-
+                }
+            )
+        
+        # Check for high-risk events
+        if event_name in high_risk_events:
+            severity = "CRITICAL" if event_name in ["DeleteBucket", "DeleteUser", "DeleteRole", "StopLogging"] else "HIGH"
+            return self._create_security_event(
+                source="AWS_CLOUDTRAIL",
+                resource_id=user_arn,
+                event_type="HIGH_RISK_ACTION",
+                severity=severity,
+                description=f"High-risk action detected: {event_name} by {user_arn}",
+                raw_event=event,
+                additional_fields={
+                    "event": {
+                        "action": event_name,
+                        "user": user_arn,
+                        "user_type": user_type,
+                        "mfa": user_identity.get("mfaAuthenticated", False),
+                        "source_ip": event.get("sourceIPAddress"),
+                        "region": event.get("awsRegion")
+                    }
+                }
+            )
+        
+        # Check for console login without MFA
+        if event_name == "ConsoleLogin" and not user_identity.get("mfaAuthenticated", False):
+            return self._create_security_event(
+                source="AWS_CLOUDTRAIL",
+                resource_id=user_arn,
+                event_type="CONSOLE_LOGIN_NO_MFA",
+                severity="HIGH",
+                description=f"Console login without MFA by {user_arn}",
+                raw_event=event,
+                additional_fields={
+                    "event": {
+                        "action": event_name,
+                        "user": user_arn,
+                        "user_type": user_type,
+                        "mfa": False,
+                        "source_ip": event.get("sourceIPAddress"),
+                        "region": event.get("awsRegion")
+                    }
+                }
+            )
+        
+        return None
     
-    def collect_cloudwatch_logs(self, max_log_groups=5, max_events=10):
-        """Fetch and normalize CloudWatch log events"""
+    def collect_guardduty_security(self) -> List[Dict]:
+        """Collect GuardDuty findings for security analysis"""
         events = []
+        
         try:
-            log_groups = self.logs.describe_log_groups(limit=max_log_groups)
-            for group in log_groups.get("logGroups", []):
-                group_name = group["logGroupName"]
-                try:
-                    streams = self.logs.describe_log_streams(
-                        logGroupName=group_name,
-                        orderBy="LastEventTime",
-                        descending=True,
-                        limit=1
+            # List GuardDuty detectors
+            detectors_response = self.guardduty.list_detectors()
+            detector_ids = detectors_response.get("DetectorIds", [])
+            
+            for detector_id in detector_ids:
+                # Get recent findings
+                findings_response = self.guardduty.list_findings(
+                    DetectorId=detector_id,
+                    MaxResults=min(self.max_events, 50)
+                )
+                
+                finding_ids = findings_response.get("FindingIds", [])
+                if finding_ids:
+                    # Get detailed findings
+                    details_response = self.guardduty.get_findings(
+                        DetectorId=detector_id,
+                        FindingIds=finding_ids
                     )
-                    if streams.get("logStreams"):
-                        stream_name = streams["logStreams"][0]["logStreamName"]
-                        log_events = self.logs.get_log_events(
-                            logGroupName=group_name,
-                            logStreamName=stream_name,
-                            limit=max_events
-                        )
-                        for e in log_events.get("events", []):
-                            events.append({
-                                "timestamp": e.get("timestamp"),
-                                "source": "AWS_CLOUDWATCH",
-                                "resource_id": group_name,
-                                "event_type": "LogEvent",
-                                "severity": "LOW",
-                                "description": f"Log event in {group_name}",
-                                "raw_event": e
-                            })
-                except Exception as e:
-                    events.append({
-                        "timestamp": datetime.datetime.utcnow().isoformat(),
-                        "source": "AWS_CLOUDWATCH",
-                        "resource_id": group_name,
-                        "event_type": "ERROR",
-                        "severity": "MEDIUM",
-                        "description": f"Failed to fetch logs: {e}",
-                        "raw_event": {}
-                    })
-        except Exception as e:
-            print(f"⚠️ CloudWatch Logs collection failed: {e}")
-        return events
-
-
-    def collect_ssm_logs(self, max_results=10):
-        """Fetch and normalize SSM command/session logs"""
-        events = []
-        try:
-            commands = self.ssm.list_command_invocations(MaxResults=max_results, Details=True)
-            for c in commands.get("CommandInvocations", []):
-                events.append({
-                    "timestamp": c.get("RequestedDateTime"),
-                    "source": "AWS_SSM",
-                    "resource_id": c.get("InstanceId", "unknown"),
-                    "event_type": "CommandInvocation",
-                    "severity": "MEDIUM" if c.get("Status") != "Success" else "LOW",
-                    "description": f"SSM command executed: {c.get('CommandId')}",
-                    "raw_event": c
-                })
-
-            sessions = self.ssm.describe_sessions(State="History", MaxResults=max_results)
-            for s in sessions.get("Sessions", []):
-                events.append({
-                    "timestamp": s.get("StartDate"),
-                    "source": "AWS_SSM",
-                    "resource_id": s.get("SessionId", "unknown"),
-                    "event_type": "Session",
-                    "severity": "LOW",
-                    "description": f"SSM session by {s.get('Owner')} on {s.get('Target')}",
-                    "raw_event": s
-                })
-        except Exception as e:
-            events.append({
-                "timestamp": datetime.datetime.utcnow().isoformat(),
-                "source": "AWS_SSM",
-                "resource_id": "N/A",
-                "event_type": "ERROR",
-                "severity": "HIGH",
-                "description": f"SSM logs collection failed: {e}",
-                "raw_event": {}
-            })
-        return events
-
-
-    def collect_config_changes(self, max_results=20):
-        """Normalize AWS Config changes"""
-        events = []
-        try:
-            response = self.config.get_resource_config_history(
-                resourceType="AWS::EC2::Instance", limit=max_results
-            )
-            for item in response.get("configurationItems", []):
-                events.append({
-                    "timestamp": item.get("configurationItemCaptureTime"),
-                    "source": "AWS_CONFIG",
-                    "resource_id": item.get("resourceId"),
-                    "event_type": "ConfigChange",
-                    "severity": "MEDIUM" if item.get("configurationItemStatus") != "OK" else "LOW",
-                    "description": f"Config change detected for {item.get('resourceName')}",
-                    "raw_event": item
-                })
-        except Exception as e:
-            events.append({
-                "timestamp": datetime.datetime.utcnow().isoformat(),
-                "source": "AWS_CONFIG",
-                "resource_id": "N/A",
-                "event_type": "ERROR",
-                "severity": "HIGH",
-                "description": f"Config collection failed: {e}",
-                "raw_event": {}
-            })
-        return events
-
-
-    def collect_guardduty(self):
-        """Normalize GuardDuty findings"""
-        events = []
-        try:
-            detectors = self.guardduty.list_detectors().get("detectorIds", [])
-            for d in detectors:
-                f = self.guardduty.list_findings(DetectorId=d)
-                if f.get("FindingIds"):
-                    details = self.guardduty.get_findings(DetectorId=d, FindingIds=f["FindingIds"])
-                    for finding in details.get("Findings", []):
-                        events.append({
-                            "timestamp": finding.get("UpdatedAt"),
-                            "source": "AWS_GUARDDUTY",
-                            "resource_id": finding.get("Resource", {}).get("InstanceDetails", {}).get("InstanceId", "unknown"),
-                            "event_type": finding.get("Type"),
-                            "severity": finding.get("Severity"),
-                            "description": finding.get("Title", "GuardDuty finding"),
-                            "raw_event": finding
-                        })
-        except Exception as e:
-            events.append({
-                "timestamp": datetime.datetime.utcnow().isoformat(),
-                "source": "AWS_GUARDDUTY",
-                "resource_id": "N/A",
-                "event_type": "ERROR",
-                "severity": "HIGH",
-                "description": f"GuardDuty collection failed: {e}",
-                "raw_event": {}
-            })
-        return events
-
-
-    def collect_inspector(self, max_results=20):
-        """Normalize Inspector findings"""
-        events = []
-        try:
-            response = self.inspector.list_findings(maxResults=max_results)
-            if response.get("findings"):
-                for finding in response["findings"]:
-                    events.append({
-                        "timestamp": finding.get("firstObservedAt"),
-                        "source": "AWS_INSPECTOR",
-                        "resource_id": finding.get("resourceId", "unknown"),
-                        "event_type": finding.get("type", "InspectorFinding"),
-                        "severity": finding.get("severity", "MEDIUM"),
-                        "description": finding.get("title", "Inspector finding"),
-                        "raw_event": finding
-                    })
-        except Exception as e:
-            events.append({
-                "timestamp": datetime.datetime.utcnow().isoformat(),
-                "source": "AWS_INSPECTOR",
-                "resource_id": "N/A",
-                "event_type": "ERROR",
-                "severity": "HIGH",
-                "description": f"Inspector collection failed: {e}",
-                "raw_event": {}
-            })
-        return events
-
-
-    def collect_vpc_flow_logs(self, log_group="/aws/vpc/flow", max_events=20):
-        """Normalize VPC Flow log entries"""
-        events = []
-        try:
-            streams = self.logs.describe_log_streams(
-                logGroupName=log_group, orderBy="LastEventTime", descending=True, limit=1
-            )
-            if streams.get("logStreams"):
-                stream_name = streams["logStreams"][0]["logStreamName"]
-                log_events = self.logs.get_log_events(
-                    logGroupName=log_group, logStreamName=stream_name, limit=max_events
+                    
+                    for finding in details_response.get("Findings", []):
+                        security_event = self._analyze_guardduty_finding(finding)
+                        if security_event:
+                            events.append(security_event)
+                            
+        except ClientError as e:
+            if e.response['Error']['Code'] != 'BadRequestException':  # GuardDuty not enabled
+                error_event = self._create_security_event(
+                    source="AWS_GUARDDUTY",
+                    resource_id="N/A",
+                    event_type="COLLECTION_ERROR",
+                    severity="CRITICAL",
+                    description=f"GuardDuty security collection failed: {e}",
+                    raw_event={"error": str(e)}
                 )
-                for e in log_events.get("events", []):
-                    events.append({
-                        "timestamp": e.get("timestamp"),
-                        "source": "AWS_VPC_FLOW",
-                        "resource_id": log_group,
-                        "event_type": "FlowLog",
-                        "severity": "LOW",
-                        "description": f"VPC flow log event in {log_group}",
-                        "raw_event": e
-                    })
-        except Exception as e:
-            events.append({
-                "timestamp": datetime.datetime.utcnow().isoformat(),
-                "source": "AWS_VPC_FLOW",
-                "resource_id": "N/A",
-                "event_type": "ERROR",
-                "severity": "HIGH",
-                "description": f"VPC Flow Logs failed: {e}",
-                "raw_event": {}
-            })
+                events.append(error_event)
+                self.logger.error(f"GuardDuty collection failed: {e}")
+            
         return events
-
-
-    def collect_s3_access_logs(self, bucket_name, max_keys=5):
-        """Normalize S3 access logs (raw object keys)"""
-        events = []
+    
+    def _analyze_guardduty_finding(self, finding: Dict) -> Dict:
+        """Analyze GuardDuty finding and create security event"""
+        finding_type = finding.get("Type", "")
+        severity_score = finding.get("Severity", 0)
+        title = finding.get("Title", "GuardDuty Finding")
+        
+        # Map GuardDuty severity to our severity levels
+        if severity_score >= 8.0:
+            severity = "CRITICAL"
+        elif severity_score >= 6.0:
+            severity = "HIGH"
+        elif severity_score >= 4.0:
+            severity = "MEDIUM"
+        else:
+            severity = "LOW"
+        
+        return self._create_security_event(
+            source="AWS_GUARDDUTY",
+            resource_id=finding.get("Id", "unknown"),
+            event_type="THREAT_DETECTION",
+            severity=severity,
+            description=f"GuardDuty finding: {title}",
+            raw_event=finding,
+            additional_fields={
+                "guardduty": {
+                    "finding_type": finding_type,
+                    "severity_score": severity_score,
+                    "title": title,
+                    "description": finding.get("Description", ""),
+                    "region": finding.get("Region", ""),
+                    "account_id": finding.get("AccountId", "")
+                }
+            }
+        )
+    
+    def collect_all_security_data(self) -> List[Dict]:
+        """Collect all security-relevant data from AWS"""
+        all_events = []
+        
+        self.logger.info("Starting AWS security data collection...")
+        
+        # Collect EC2 security data
+        self.logger.info("Collecting EC2 security data...")
+        ec2_events = self.collect_ec2_security()
+        all_events.extend(ec2_events)
+        self.logger.info(f"Collected {len(ec2_events)} EC2 security events")
+        
+        # Collect S3 security data
+        self.logger.info("Collecting S3 security data...")
+        s3_events = self.collect_s3_security()
+        all_events.extend(s3_events)
+        self.logger.info(f"Collected {len(s3_events)} S3 security events")
+        
+        # Collect IAM security data
+        self.logger.info("Collecting IAM security data...")
+        iam_events = self.collect_iam_security()
+        all_events.extend(iam_events)
+        self.logger.info(f"Collected {len(iam_events)} IAM security events")
+        
+        # Collect CloudTrail security data
+        self.logger.info("Collecting CloudTrail security data...")
+        cloudtrail_events = self.collect_cloudtrail_security()
+        all_events.extend(cloudtrail_events)
+        self.logger.info(f"Collected {len(cloudtrail_events)} CloudTrail security events")
+        
+        # Collect GuardDuty security data
+        self.logger.info("Collecting GuardDuty security data...")
+        guardduty_events = self.collect_guardduty_security()
+        all_events.extend(guardduty_events)
+        self.logger.info(f"Collected {len(guardduty_events)} GuardDuty security events")
+        
+        self.logger.info(f"Total security events collected: {len(all_events)}")
+        
+        return all_events
+    
+    def save_security_events(self, events: List[Dict], output_dir: str = "logs") -> str:
+        """Save security events to JSON file"""
         try:
-            response = self.s3.list_objects_v2(Bucket=bucket_name, MaxKeys=max_keys)
-            for obj in response.get("Contents", []):
-                events.append({
-                    "timestamp": obj.get("LastModified"),
-                    "source": "AWS_S3_ACCESS",
-                    "resource_id": bucket_name,
-                    "event_type": "AccessLog",
-                    "severity": "LOW",
-                    "description": f"S3 access log object: {obj['Key']}",
-                    "raw_event": obj
-                })
+            # Ensure output directory exists
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # Create filename with timestamp
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"aws_security_events_{timestamp}.json"
+            filepath = os.path.join(output_dir, filename)
+            
+            # Save events
+            with open(filepath, 'w') as f:
+                json.dump(events, f, indent=2, default=str)
+            
+            self.logger.info(f"Security events saved to: {filepath}")
+            return filepath
+            
         except Exception as e:
-            events.append({
-                "timestamp": datetime.datetime.utcnow().isoformat(),
-                "source": "AWS_S3_ACCESS",
-                "resource_id": bucket_name,
-                "event_type": "ERROR",
-                "severity": "HIGH",
-                "description": f"S3 Access Logs failed: {e}",
-                "raw_event": {}
-            })
-        return events
+            self.logger.error(f"Failed to save security events: {e}")
+            raise
+        
 
-    def collect_alb_logs(self, bucket_name, max_keys=5):
-        """ALB/ELB access logs are stored in S3"""
-        return self.collect_s3_access_logs(bucket_name, max_keys)
-
-    def collect_waf_logs(self, log_group="/aws/waf/logs", max_events=20):
-        """Normalize WAF log events"""
-        events = []
-        try:
-            streams = self.logs.describe_log_streams(
-                logGroupName=log_group, orderBy="LastEventTime", descending=True, limit=1
-            )
-            if streams.get("logStreams"):
-                stream_name = streams["logStreams"][0]["logStreamName"]
-                log_events = self.logs.get_log_events(
-                    logGroupName=log_group, logStreamName=stream_name, limit=max_events
-                )
-                for e in log_events.get("events", []):
-                    events.append({
-                        "timestamp": e.get("timestamp"),
-                        "source": "AWS_WAF",
-                        "resource_id": log_group,
-                        "event_type": "WAFLog",
-                        "severity": "MEDIUM",
-                        "description": f"WAF log event in {log_group}",
-                        "raw_event": e
-                    })
-        except Exception as e:
-            events.append({
-                "timestamp": datetime.datetime.utcnow().isoformat(),
-                "source": "AWS_WAF",
-                "resource_id": "N/A",
-                "event_type": "ERROR",
-                "severity": "HIGH",
-                "description": f"WAF Logs failed: {e}",
-                "raw_event": {}
-            })
-        return events
-
-    def collect_eks_audit_logs(self, cluster_name, log_group="/aws/eks/cluster/audit", max_events=10):
-        """EKS audit logs"""
-        logs = self.collect_cloudwatch_logs(max_log_groups=1, max_events=max_events)
-        for e in logs:
-            e["source"] = "AWS_EKS_AUDIT"
-            e["resource_id"] = cluster_name
-            e["description"] = f"EKS audit log for cluster {cluster_name}"
-        return logs
-
-    def collect_app_logs(self, log_group, max_events=10):
-        """Application logs in CloudWatch"""
-        logs = self.collect_cloudwatch_logs(max_log_groups=1, max_events=max_events)
-        for e in logs:
-            e["source"] = "AWS_APP_LOGS"
-            e["resource_id"] = log_group
-            e["description"] = f"Application log from {log_group}"
-        return logs
 
 if __name__ == "__main__":
-    collector = AWSCollector(region="us-east-1")
+    import logging
     
-    print("\n=== EC2 Data ===")
-    ec2_events = collector.collect_ec2()
-#    print(json.dumps(ec2_events, indent=2, default=str))
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
     
-    print("\n=== S3 Data ===")
-    s3_events = collector.collect_s3()
-#    print(json.dumps(s3_events, indent=2, default=str))
-    
-    print("\n=== IAM Data ===")
-    iam_events = collector.collect_iam()
-#    print(json.dumps(iam_events, indent=2, default=str))
-    
-    print("\n=== CloudTrail Logs ===")
-    cloudtrail_events = collector.collect_cloudtrail()
-#    print(json.dumps(cloudtrail_events, indent=2, default=str))
-    
-    print("\n=== CloudWatch Logs ===")
-    cloudwatch_logs = collector.collect_cloudwatch_logs()
-#    print(json.dumps(cloudwatch_logs, indent=2, default=str))
-    
-    print("\n=== SSM Logs ===")
-    ssm_logs = collector.collect_ssm_logs()
-#    print(json.dumps(ssm_logs, indent=2, default=str))
-    
-    print("\n=== AWS Config ===")
-    config_changes = collector.collect_config_changes()
-#    print(json.dumps(config_changes, indent=2, default=str))
-
-    print("\n=== GuardDuty Findings ===")
-    guardduty_findings = collector.collect_guardduty()
-#    print(json.dumps(guardduty_findings, indent=2, default=str))
-
-    print("\n=== Inspector Findings ===")
-    inspector_findings = collector.collect_inspector()
-#    print(json.dumps(inspector_findings, indent=2, default=str))
-
-    print("\n=== VPC Flow Logs ===")
-    vpc_flow = collector.collect_vpc_flow_logs()
-#    print(json.dumps(vpc_flow, indent=2, default=str))
-
-    print("\n=== S3 Access Logs (replace with your bucket name) ===")
-    s3_access = collector.collect_s3_access_logs("my-s3-logs-bucket")
-#    print(json.dumps(s3_access, indent=2, default=str))
-
-    print("\n=== ALB/ELB Logs (replace with your bucket name) ===")
-    alb_logs = collector.collect_alb_logs("my-elb-logs-bucket")
-#    print(json.dumps(alb_logs, indent=2, default=str))
-
-    print("\n=== WAF Logs ===")
-    waf_logs = collector.collect_waf_logs()
-#    print(json.dumps(waf_logs, indent=2, default=str))
-    
-    print("\n=== EKS Audit Logs (replace with your cluster name & log group) ===")
-    eks_audit_logs = collector.collect_eks_audit_logs("my-eks-cluster")
-#    print(json.dumps(eks_audit_logs, indent=2, default=str))
-
-    print("\n=== Application Logs (replace with your app log group) ===")
-    app_logs = collector.collect_app_logs("/my/app/logs")
-#    print(json.dumps(app_logs, indent=2, default=str))
-    
-    # Categorize
-    misconfig_events = ec2_events + s3_events + config_changes
-    iam_misuse_events = iam_events
-    activity_events = cloudtrail_events + cloudwatch_logs + ssm_logs + app_logs + eks_audit_logs
-    threat_detection = guardduty_findings + inspector_findings + waf_logs
-    traffic_logs = vpc_flow + s3_access + alb_logs
-    All_Logs = misconfig_events + iam_misuse_events + activity_events + threat_detection + traffic_logs
-    
-    
-    # Write to files
-    def save_logs(filename, events):
-        # Ensure logs directory exists
-        logs_dir = os.path.join(os.path.dirname(__file__), "logs")
-        os.makedirs(logs_dir, exist_ok=True)
-        with open(os.path.join(logs_dir, filename), "w") as f:
-            json.dump(events, f, indent=2, default=str)
-
-    save_logs("misconfigurations.json", misconfig_events)
-    save_logs("iam_misuse.json", iam_misuse_events)
-    save_logs("activity_logs.json", activity_events)
-    save_logs("threat_detection.json", threat_detection)
-    save_logs("traffic_logs.json", traffic_logs)
-    save_logs("All_Logs.json", All_Logs)
-
-    print("✅ Logs saved in logs/ folder")
+    try:
+        # Initialize collector
+        collector = AWSCollector(region="us-east-1", max_events=1000)
+        
+        print("🦅 CloudHawk AWS Security Collector")
+        print("=" * 50)
+        
+        # Collect all security data
+        security_events = collector.collect_all_security_data()
+        
+        # Save to file
+        output_file = collector.save_security_events(security_events)
+        
+        # Print summary
+        print("\n📊 Collection Summary:")
+        print(f"Total security events collected: {len(security_events)}")
+        
+        # Count by severity
+        severity_counts = {}
+        for event in security_events:
+            severity = event.get("severity", "UNKNOWN")
+            severity_counts[severity] = severity_counts.get(severity, 0) + 1
+        
+        print("\n🚨 Events by Severity:")
+        for severity, count in sorted(severity_counts.items()):
+            print(f"  {severity}: {count}")
+        
+        # Count by source
+        source_counts = {}
+        for event in security_events:
+            source = event.get("source", "UNKNOWN")
+            source_counts[source] = source_counts.get(source, 0) + 1
+        
+        print("\n📋 Events by Source:")
+        for source, count in sorted(source_counts.items()):
+            print(f"  {source}: {count}")
+        
+        print(f"\n✅ Security events saved to: {output_file}")
+        print("\n🔍 Next steps:")
+        print("1. Review the collected events")
+        print("2. Run the rule engine to detect security issues")
+        print("3. Configure alerting for critical findings")
+        
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        logging.error(f"Collection failed: {e}")

@@ -1,0 +1,28 @@
+alerting:
+  channels:
+    email:
+      enabled: true
+      from_email: test@example.com
+      password: testpassword
+      smtp_port: 587
+      smtp_server: smtp.gmail.com
+      to_email: test@example.com
+      username: test@example.com
+    slack:
+      channel: '#security-alerts'
+      enabled: false
+      webhook_url: ''
+  enabled: true
+aws:
+  default_region: us-east-1
+  max_events_per_service: 1000
+  services:
+  - ec2
+  - s3
+  - iam
+  - cloudtrail
+  - guardduty
+detection:
+  rule_engine:
+    chunk_size: 100
+    threads: 4

@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  cloudhawk:
+    build: .
+    container_name: cloudhawk
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./logs:/app/logs
+      - ./alerts:/app/alerts
+      - ~/.aws:/home/cloudhawk/.aws:ro
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
+      - FLASK_ENV=${FLASK_ENV:-production}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - cloudhawk-network
+
+  # Optional: Redis for caching (future enhancement)
+  redis:
+    image: redis:7-alpine
+    container_name: cloudhawk-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - cloudhawk-network
+    profiles:
+      - cache
+
+  # Optional: PostgreSQL for persistent storage (future enhancement)
+  postgres:
+    image: postgres:15-alpine
+    container_name: cloudhawk-postgres
+    environment:
+      - POSTGRES_DB=cloudhawk
+      - POSTGRES_USER=cloudhawk
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-cloudhawk123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - cloudhawk-network
+    profiles:
+      - database
+
+volumes:
+  redis-data:
+  postgres-data:
+
+networks:
+  cloudhawk-network:
+    driver: bridge

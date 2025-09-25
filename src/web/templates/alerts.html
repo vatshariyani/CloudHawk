@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block title %}Security Alerts - CloudHawk{% endblock %}
+
+{% block content %}
+<style>
+/* Dark mode styles for alerts page */
+[data-theme="dark"] .card {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .card-header {
+    background-color: var(--bg-tertiary) !important;
+    border-bottom-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .table {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > td {
+    background-color: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] .table-hover tbody tr:hover {
+    background-color: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .form-control, [data-theme="dark"] .form-select {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .form-control:focus, [data-theme="dark"] .form-select:focus {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--bs-primary) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+}
+
+[data-theme="dark"] .btn-outline-secondary {
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .btn-outline-secondary:hover {
+    background-color: var(--bg-tertiary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <h1 class="h3 mb-4">
+            <i class="fas fa-exclamation-triangle"></i> Security Alerts
+        </h1>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="severity" class="form-label">Severity</label>
+                        <select class="form-select" id="severity" name="severity">
+                            <option value="">All Severities</option>
+                            <option value="CRITICAL" {% if severity_filter == 'CRITICAL' %}selected{% endif %}>Critical</option>
+                            <option value="HIGH" {% if severity_filter == 'HIGH' %}selected{% endif %}>High</option>
+                            <option value="MEDIUM" {% if severity_filter == 'MEDIUM' %}selected{% endif %}>Medium</option>
+                            <option value="LOW" {% if severity_filter == 'LOW' %}selected{% endif %}>Low</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="service" class="form-label">Service</label>
+                        <select class="form-select" id="service" name="service">
+                            <option value="">All Services</option>
+                            <option value="EC2" {% if service_filter == 'EC2' %}selected{% endif %}>EC2</option>
+                            <option value="S3" {% if service_filter == 'S3' %}selected{% endif %}>S3</option>
+                            <option value="IAM" {% if service_filter == 'IAM' %}selected{% endif %}>IAM</option>
+                            <option value="CloudTrail" {% if service_filter == 'CloudTrail' %}selected{% endif %}>CloudTrail</option>
+                            <option value="GuardDuty" {% if service_filter == 'GuardDuty' %}selected{% endif %}>GuardDuty</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="fas fa-filter"></i> Filter
+                        </button>
+                        <a href="{{ url_for('alerts') }}" class="btn btn-outline-secondary me-2">
+                            <i class="fas fa-times"></i> Clear
+                        </a>
+                        <button type="button" class="btn btn-outline-info me-2" onclick="sendAlerts('email')">
+                            <i class="fas fa-envelope"></i> Send Email
+                        </button>
+                        <button type="button" class="btn btn-outline-warning" onclick="sendAlerts('slack')">
+                            <i class="fab fa-slack"></i> Send Slack
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alerts List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list"></i> Alerts ({{ alerts|length }} found)
+                </h5>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="refreshAlerts()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="exportAlerts()">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if alerts %}
+                    <div class="list-group list-group-flush">
+                        {% for alert in alerts %}
+                        <div class="list-group-item alert-item alert-{{ alert.severity.lower() }}">
+                            <div class="d-flex w-100 justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <span class="badge bg-{{ 'danger' if alert.severity == 'CRITICAL' else 'warning' if alert.severity == 'HIGH' else 'info' if alert.severity == 'MEDIUM' else 'success' }} me-2">
+                                            {{ alert.severity }}
+                                        </span>
+                                        <span class="badge bg-secondary me-2">{{ alert.service }}</span>
+                                        <small class="text-muted">
+                                            <i class="fas fa-fingerprint"></i> {{ alert.rule_id }}
+                                        </small>
+                                    </div>
+                                    
+                                    <h6 class="mb-2">{{ alert.title }}</h6>
+                                    <p class="mb-2 text-muted">{{ alert.description }}</p>
+                                    
+                                    {% if alert.remediation %}
+                                    <div class="alert alert-info alert-sm mb-2">
+                                        <strong><i class="fas fa-lightbulb"></i> Remediation:</strong>
+                                        {{ alert.remediation }}
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <small class="text-muted">
+                                                <i class="fas fa-clock"></i> 
+                                                {{ alert.timestamp[:19] if alert.timestamp else 'Unknown' }}
+                                            </small>
+                                        </div>
+                                        <div class="col-md-6 text-end">
+                                            <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#alert-{{ loop.index }}" aria-expanded="false">
+                                                <i class="fas fa-eye"></i> View Details
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="collapse mt-3" id="alert-{{ loop.index }}">
+                                        <div class="card card-body bg-light">
+                                            <h6>Raw Event Data:</h6>
+                                            <pre class="mb-0"><code>{{ alert.log_excerpt | tojson(indent=2) }}</code></pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-check-circle fa-4x mb-3"></i>
+                        <h4>No alerts found</h4>
+                        <p>{% if severity_filter or service_filter %}
+                            No alerts match your current filters. Try adjusting your filter criteria.
+                        {% else %}
+                            No security alerts have been generated yet. Run a security scan to check your infrastructure.
+                        {% endif %}</p>
+                        {% if not severity_filter and not service_filter %}
+                        <a href="{{ url_for('scan') }}" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Run Security Scan
+                        </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Function to send alerts
+function sendAlerts(type) {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    
+    // Show loading state
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    button.disabled = true;
+    
+    // Send alerts
+    fetch('/api/send-alerts', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type: type })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            const result = data.results[type];
+            if (result && result.status === 'success') {
+                alert(`✅ ${type.toUpperCase()} alerts sent successfully! (${result.sent}/${result.total} alerts)`);
+            } else {
+                alert(`❌ ${type.toUpperCase()} alerts failed: ${result ? result.message : 'Unknown error'}`);
+            }
+        } else {
+            alert(`❌ Failed to send ${type} alerts: ${data.message}`);
+        }
+    })
+    .catch(error => {
+        alert(`❌ Error sending ${type} alerts: ${error.message}`);
+    })
+    .finally(() => {
+        // Restore button state
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function refreshAlerts() {
+    window.location.reload();
+}
+
+function exportAlerts() {
+    // Get current filters
+    const params = new URLSearchParams(window.location.search);
+    
+    // Create export URL
+    const exportUrl = '/api/alerts?' + params.toString();
+    
+    // Download the data
+    fetch(exportUrl)
+        .then(response => response.json())
+        .then(data => {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'cloudhawk-alerts-' + new Date().toISOString().slice(0, 10) + '.json';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        })
+        .catch(error => {
+            console.error('Error exporting alerts:', error);
+            alert('Error exporting alerts. Please try again.');
+        });
+}
+
+// Auto-refresh every 30 seconds
+setInterval(refreshAlerts, 30000);
+</script>
+{% endblock %}

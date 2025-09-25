@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block title %}Security Rules - CloudHawk{% endblock %}
+
+{% block content %}
+<style>
+/* Dark mode styles for rules page */
+[data-theme="dark"] .card {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .card-header {
+    background-color: var(--bg-tertiary) !important;
+    border-bottom-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .table {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > td {
+    background-color: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] .table-hover tbody tr:hover {
+    background-color: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .btn-outline-secondary {
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .btn-outline-secondary:hover {
+    background-color: var(--bg-tertiary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <h1 class="h3 mb-4">
+            <i class="fas fa-cogs"></i> Security Rules
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list"></i> Detection Rules ({{ rules|length }} rules)
+                </h5>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-info" onclick="sendNotification()">
+                        <i class="fas fa-envelope"></i> Send Notification
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="refreshRules()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="exportRules()">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if rules %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Service</th>
+                                    <th>Severity</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rule in rules %}
+                                <tr>
+                                    <td>
+                                        <code>{{ rule.id }}</code>
+                                    </td>
+                                    <td>
+                                        <strong>{{ rule.title }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ rule.service }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'danger' if rule.severity == 'CRITICAL' else 'warning' if rule.severity == 'HIGH' else 'info' if rule.severity == 'MEDIUM' else 'success' }}">
+                                            {{ rule.severity }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ rule.description[:100] }}{% if rule.description|length > 100 %}...{% endif %}</small>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" type="button" 
+                                                data-bs-toggle="collapse" data-bs-target="#rule-{{ loop.index }}" 
+                                                aria-expanded="false">
+                                            <i class="fas fa-eye"></i> View
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr class="collapse" id="rule-{{ loop.index }}">
+                                    <td colspan="6">
+                                        <div class="card card-body bg-light">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <h6>Rule Details:</h6>
+                                                    <ul class="list-unstyled">
+                                                        <li><strong>ID:</strong> {{ rule.id }}</li>
+                                                        <li><strong>Title:</strong> {{ rule.title }}</li>
+                                                        <li><strong>Service:</strong> {{ rule.service }}</li>
+                                                        <li><strong>Severity:</strong> {{ rule.severity }}</li>
+                                                    </ul>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <h6>Condition:</h6>
+                                                    <code class="d-block bg-white p-2 rounded">{{ rule.condition }}</code>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="row mt-3">
+                                                <div class="col-12">
+                                                    <h6>Description:</h6>
+                                                    <p>{{ rule.description }}</p>
+                                                </div>
+                                            </div>
+                                            
+                                            {% if rule.remediation %}
+                                            <div class="row">
+                                                <div class="col-12">
+                                                    <h6>Remediation:</h6>
+                                                    <div class="alert alert-info">
+                                                        <i class="fas fa-lightbulb"></i>
+                                                        {{ rule.remediation }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-exclamation-triangle fa-4x mb-3"></i>
+                        <h4>No rules found</h4>
+                        <p>No security rules are currently loaded. Check the rules configuration file.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rules by Service -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie"></i> Rules by Service
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% set service_counts = {} %}
+                    {% for rule in rules %}
+                        {% set _ = service_counts.update({rule.service: service_counts.get(rule.service, 0) + 1}) %}
+                    {% endfor %}
+                    
+                    {% for service, count in service_counts.items() %}
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ service }}</h5>
+                                <h2 class="card-text text-primary">{{ count }}</h2>
+                                <p class="card-text">Rules</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rules by Severity -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-bar"></i> Rules by Severity
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% set severity_counts = {} %}
+                    {% for rule in rules %}
+                        {% set _ = severity_counts.update({rule.severity: severity_counts.get(rule.severity, 0) + 1}) %}
+                    {% endfor %}
+                    
+                    {% for severity in ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] %}
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title severity-{{ severity.lower() }}">{{ severity }}</h5>
+                                <h2 class="card-text severity-{{ severity.lower() }}">{{ severity_counts.get(severity, 0) }}</h2>
+                                <p class="card-text">Rules</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Function to send notification about rule changes
+function sendNotification() {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    
+    // Show loading state
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    button.disabled = true;
+    
+    // Get custom message from user
+    const message = prompt('Enter notification message (or leave blank for default):', 'Security rules have been updated');
+    
+    if (message === null) {
+        // User cancelled
+        button.innerHTML = originalText;
+        button.disabled = false;
+        return;
+    }
+    
+    // Send notification
+    fetch('/api/send-notification', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+            type: 'rules_changed',
+            message: message || 'Security rules have been updated'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('✅ Notification sent successfully!');
+        } else {
+            alert(`❌ Failed to send notification: ${data.message}`);
+        }
+    })
+    .catch(error => {
+        alert(`❌ Error sending notification: ${error.message}`);
+    })
+    .finally(() => {
+        // Restore button state
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function refreshRules() {
+    window.location.reload();
+}
+
+function exportRules() {
+    fetch('/api/rules')
+        .then(response => response.json())
+        .then(data => {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'cloudhawk-rules-' + new Date().toISOString().slice(0, 10) + '.json';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        })
+        .catch(error => {
+            console.error('Error exporting rules:', error);
+            alert('Error exporting rules. Please try again.');
+        });
+}
+</script>
+{% endblock %}
