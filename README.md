@@ -19,7 +19,7 @@
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/cloudhawk.git
+   git clone https://github.com/vatshariyani/cloudhawk.git
    cd cloudhawk
    ```
 
@@ -365,7 +365,7 @@ The Dockerfile uses a **multi-stage build** for optimized production containers:
 #### **Option 1: Docker Compose (Recommended)**
 ```bash
 # Clone and start CloudHawk
-git clone https://github.com/your-org/cloudhawk.git
+git clone https://github.com/vatshariyani/cloudhawk.git
 cd cloudhawk
 docker-compose up -d
 
@@ -582,9 +582,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Documentation**: [Wiki](https://github.com/yourusername/cloudhawk/wiki)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/cloudhawk/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/cloudhawk/discussions)
+- **Documentation**: [Wiki](https://github.com/vatshariyani/cloudhawk/wiki)
+- **Issues**: [GitHub Issues](https://github.com/vatshariyani/cloudhawk/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/vatshariyani/cloudhawk/discussions)
 - **Email**: support@cloudhawk.dev
 
 ## 📋 Current Implementation Status
