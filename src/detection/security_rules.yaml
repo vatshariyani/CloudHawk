@@ -257,3 +257,233 @@ rules:
     condition: event_type == "COLLECTION_ERROR"
     severity: CRITICAL
     remediation: "Check AWS credentials and permissions, review error logs"
+
+  #######################################
+  # Azure Storage Account Rules (8)
+  #######################################
+  - id: AZURE-STORAGE-001
+    title: Azure Storage HTTP allowed
+    description: Storage account allows HTTP traffic
+    service: AZURE_STORAGE
+    condition: source == "AZURE_STORAGE" and event_type == "HTTP_ALLOWED"
+    severity: HIGH
+    remediation: "Enable HTTPS-only traffic for storage accounts"
+
+  - id: AZURE-STORAGE-002
+    title: Azure Storage no encryption
+    description: Storage account has no encryption enabled
+    service: AZURE_STORAGE
+    condition: source == "AZURE_STORAGE" and event_type == "NO_ENCRYPTION"
+    severity: HIGH
+    remediation: "Enable encryption for storage accounts"
+
+  - id: AZURE-STORAGE-003
+    title: Azure Storage public access
+    description: Storage account has public access enabled
+    service: AZURE_STORAGE
+    condition: source == "AZURE_STORAGE" and event_type == "PUBLIC_ACCESS"
+    severity: CRITICAL
+    remediation: "Disable public access and use private endpoints"
+
+  - id: AZURE-STORAGE-004
+    title: Azure Storage no versioning
+    description: Storage account has versioning disabled
+    service: AZURE_STORAGE
+    condition: source == "AZURE_STORAGE" and event_type == "VERSIONING_DISABLED"
+    severity: MEDIUM
+    remediation: "Enable versioning for data protection"
+
+  #######################################
+  # Azure Virtual Machine Rules (6)
+  #######################################
+  - id: AZURE-VM-001
+    title: Azure VM no disk encryption
+    description: Virtual machine has no disk encryption
+    service: AZURE_VM
+    condition: source == "AZURE_VM" and event_type == "NO_DISK_ENCRYPTION"
+    severity: HIGH
+    remediation: "Enable disk encryption for virtual machines"
+
+  - id: AZURE-VM-002
+    title: Azure VM external IP
+    description: Virtual machine has external IP address
+    service: AZURE_VM
+    condition: source == "AZURE_VM" and event_type == "EXTERNAL_IP"
+    severity: MEDIUM
+    remediation: "Use private IPs and load balancers instead of external IPs"
+
+  - id: AZURE-VM-003
+    title: Azure VM no network security group
+    description: Virtual machine has no network security group
+    service: AZURE_VM
+    condition: source == "AZURE_VM" and event_type == "NO_NSG"
+    severity: HIGH
+    remediation: "Associate network security groups with virtual machines"
+
+  #######################################
+  # Azure Key Vault Rules (4)
+  #######################################
+  - id: AZURE-KV-001
+    title: Azure Key Vault soft delete disabled
+    description: Key Vault has soft delete disabled
+    service: AZURE_KEYVAULT
+    condition: source == "AZURE_KEYVAULT" and event_type == "SOFT_DELETE_DISABLED"
+    severity: HIGH
+    remediation: "Enable soft delete for Key Vault"
+
+  - id: AZURE-KV-002
+    title: Azure Key Vault purge protection disabled
+    description: Key Vault has purge protection disabled
+    service: AZURE_KEYVAULT
+    condition: source == "AZURE_KEYVAULT" and event_type == "PURGE_PROTECTION_DISABLED"
+    severity: MEDIUM
+    remediation: "Enable purge protection for Key Vault"
+
+  #######################################
+  # Azure Security Center Rules (3)
+  #######################################
+  - id: AZURE-SCC-001
+    title: Azure Security Center critical finding
+    description: Security Center detected critical security issue
+    service: AZURE_SECURITY_CENTER
+    condition: source == "AZURE_SECURITY_CENTER" and event_type == "SECURITY_RECOMMENDATION" and security_center.severity == "Critical"
+    severity: CRITICAL
+    remediation: "Address Security Center critical recommendations immediately"
+
+  - id: AZURE-SCC-002
+    title: Azure Security Center high finding
+    description: Security Center detected high severity security issue
+    service: AZURE_SECURITY_CENTER
+    condition: source == "AZURE_SECURITY_CENTER" and event_type == "SECURITY_RECOMMENDATION" and security_center.severity == "High"
+    severity: HIGH
+    remediation: "Review and address Security Center high priority recommendations"
+
+  #######################################
+  # GCP IAM Rules (6)
+  #######################################
+  - id: GCP-IAM-001
+    title: GCP service account keys
+    description: Service account has access keys (should use workload identity)
+    service: GCP_IAM
+    condition: source == "GCP_IAM_SA" and event_type == "SERVICE_ACCOUNT_KEYS"
+    severity: HIGH
+    remediation: "Use workload identity instead of service account keys"
+
+  - id: GCP-IAM-002
+    title: GCP overly permissive role
+    description: IAM policy has overly permissive role
+    service: GCP_IAM
+    condition: source == "GCP_IAM_POLICY" and event_type == "OVERLY_PERMISSIVE_ROLE"
+    severity: CRITICAL
+    remediation: "Apply principle of least privilege to IAM roles"
+
+  - id: GCP-IAM-003
+    title: GCP no MFA enforcement
+    description: No MFA enforcement for IAM users
+    service: GCP_IAM
+    condition: source == "GCP_IAM" and event_type == "NO_MFA_ENFORCEMENT"
+    severity: HIGH
+    remediation: "Enable MFA enforcement for IAM users"
+
+  #######################################
+  # GCP Cloud Storage Rules (5)
+  #######################################
+  - id: GCP-STORAGE-001
+    title: GCP bucket public access
+    description: Cloud Storage bucket has public access
+    service: GCP_STORAGE
+    condition: source == "GCP_STORAGE_BUCKET" and event_type == "PUBLIC_ACCESS"
+    severity: CRITICAL
+    remediation: "Remove public access from Cloud Storage buckets"
+
+  - id: GCP-STORAGE-002
+    title: GCP bucket no encryption
+    description: Cloud Storage bucket has no encryption
+    service: GCP_STORAGE
+    condition: source == "GCP_STORAGE_BUCKET" and event_type == "NO_ENCRYPTION"
+    severity: HIGH
+    remediation: "Enable encryption for Cloud Storage buckets"
+
+  - id: GCP-STORAGE-003
+    title: GCP bucket no versioning
+    description: Cloud Storage bucket has versioning disabled
+    service: GCP_STORAGE
+    condition: source == "GCP_STORAGE_BUCKET" and event_type == "VERSIONING_DISABLED"
+    severity: MEDIUM
+    remediation: "Enable versioning for data protection"
+
+  #######################################
+  # GCP Compute Engine Rules (4)
+  #######################################
+  - id: GCP-COMPUTE-001
+    title: GCP instance external IP
+    description: Compute Engine instance has external IP
+    service: GCP_COMPUTE
+    condition: source == "GCP_COMPUTE_INSTANCE" and event_type == "EXTERNAL_IP"
+    severity: MEDIUM
+    remediation: "Use private IPs and load balancers instead of external IPs"
+
+  - id: GCP-COMPUTE-002
+    title: GCP instance no disk encryption
+    description: Compute Engine instance has no disk encryption
+    service: GCP_COMPUTE
+    condition: source == "GCP_COMPUTE_INSTANCE" and event_type == "NO_DISK_ENCRYPTION"
+    severity: HIGH
+    remediation: "Enable disk encryption for Compute Engine instances"
+
+  - id: GCP-COMPUTE-003
+    title: GCP instance no firewall rules
+    description: Compute Engine instance has no firewall rules
+    service: GCP_COMPUTE
+    condition: source == "GCP_COMPUTE_INSTANCE" and event_type == "NO_FIREWALL_RULES"
+    severity: HIGH
+    remediation: "Configure firewall rules for Compute Engine instances"
+
+  #######################################
+  # GCP Security Command Center Rules (3)
+  #######################################
+  - id: GCP-SCC-001
+    title: GCP Security Command Center critical finding
+    description: Security Command Center detected critical security issue
+    service: GCP_SCC
+    condition: source == "GCP_SCC" and event_type == "SECURITY_FINDING" and scc_finding.severity == "CRITICAL"
+    severity: CRITICAL
+    remediation: "Address Security Command Center critical findings immediately"
+
+  - id: GCP-SCC-002
+    title: GCP Security Command Center high finding
+    description: Security Command Center detected high severity security issue
+    service: GCP_SCC
+    condition: source == "GCP_SCC" and event_type == "SECURITY_FINDING" and scc_finding.severity == "HIGH"
+    severity: HIGH
+    remediation: "Review and address Security Command Center high priority findings"
+
+  #######################################
+  # GCP Asset Inventory Rules (2)
+  #######################################
+  - id: GCP-ASSET-001
+    title: GCP asset no labels
+    description: Cloud Asset has no labels for organization
+    service: GCP_ASSET_INVENTORY
+    condition: source == "GCP_ASSET_INVENTORY" and event_type == "NO_LABELS"
+    severity: LOW
+    remediation: "Add labels to Cloud Assets for better organization and governance"
+
+  #######################################
+  # Multi-Cloud Collection Error Rules (3)
+  #######################################
+  - id: COLLECT-002
+    title: Azure collection error
+    description: Error occurred during Azure data collection
+    service: COLLECTION
+    condition: source == "AZURE_STORAGE" and event_type == "COLLECTION_ERROR"
+    severity: CRITICAL
+    remediation: "Check Azure credentials and permissions, review error logs"
+
+  - id: COLLECT-003
+    title: GCP collection error
+    description: Error occurred during GCP data collection
+    service: COLLECTION
+    condition: source == "GCP_STORAGE" and event_type == "COLLECTION_ERROR"
+    severity: CRITICAL
+    remediation: "Check GCP credentials and permissions, review error logs"

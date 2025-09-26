@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class HealthScorer:
-    """Security health scoring engine"""
+    """Multi-cloud security health scoring engine for AWS, Azure, and GCP"""
     
     def __init__(self, config: Dict = None):
         """Initialize the health scorer"""
@@ -93,20 +93,20 @@ class HealthScorer:
             source = event.get('source', '')
             event_type = event.get('event_type', '')
             
-            # IAM Security
-            if source in ['AWS_IAM', 'AWS_IAM_USER', 'AWS_IAM_ROLE']:
+            # IAM Security (Multi-cloud)
+            if source in ['AWS_IAM', 'AWS_IAM_USER', 'AWS_IAM_ROLE', 'AZURE_AD', 'GCP_IAM', 'GCP_IAM_SA', 'GCP_IAM_POLICY']:
                 categorized['iam_security'].append(event)
             
-            # Network Security
-            elif source in ['AWS_EC2_SG', 'AWS_EC2_INSTANCE', 'AWS_VPC']:
+            # Network Security (Multi-cloud)
+            elif source in ['AWS_EC2_SG', 'AWS_EC2_INSTANCE', 'AWS_VPC', 'AZURE_VM', 'AZURE_NSG', 'GCP_COMPUTE_INSTANCE', 'GCP_FIREWALL']:
                 categorized['network_security'].append(event)
             
-            # Data Security
-            elif source in ['AWS_S3', 'AWS_S3_ACL', 'AWS_RDS']:
+            # Data Security (Multi-cloud)
+            elif source in ['AWS_S3', 'AWS_S3_ACL', 'AWS_RDS', 'AZURE_STORAGE', 'AZURE_KEYVAULT', 'GCP_STORAGE_BUCKET', 'GCP_STORAGE_OBJECT']:
                 categorized['data_security'].append(event)
             
-            # Monitoring Security
-            elif source in ['AWS_CLOUDTRAIL', 'AWS_GUARDDUTY', 'AWS_CLOUDWATCH']:
+            # Monitoring Security (Multi-cloud)
+            elif source in ['AWS_CLOUDTRAIL', 'AWS_GUARDDUTY', 'AWS_CLOUDWATCH', 'AZURE_SECURITY_CENTER', 'AZURE_ACTIVITY_LOG', 'GCP_SCC', 'GCP_LOGGING']:
                 categorized['monitoring_security'].append(event)
             
             # Access Security

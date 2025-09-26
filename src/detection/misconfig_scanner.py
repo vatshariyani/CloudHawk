@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class MisconfigScanner:
-    """AWS misconfiguration scanner"""
+    """Multi-cloud misconfiguration scanner for AWS, Azure, and GCP"""
     
     def __init__(self, config: Dict = None):
         """Initialize the misconfiguration scanner"""
@@ -172,12 +172,128 @@ class MisconfigScanner:
                     'check': self._check_guardduty_enabled,
                     'remediation': 'Enable GuardDuty threat detection'
                 }
+            },
+            # Azure misconfiguration rules
+            'azure_storage': {
+                'http_allowed': {
+                    'description': 'Azure Storage allows HTTP traffic',
+                    'severity': 'HIGH',
+                    'check': self._check_azure_storage_https,
+                    'remediation': 'Enable HTTPS-only for storage accounts'
+                },
+                'no_encryption': {
+                    'description': 'Azure Storage has no encryption',
+                    'severity': 'HIGH',
+                    'check': self._check_azure_storage_encryption,
+                    'remediation': 'Enable encryption for storage accounts'
+                },
+                'public_access': {
+                    'description': 'Azure Storage has public access',
+                    'severity': 'CRITICAL',
+                    'check': self._check_azure_storage_public_access,
+                    'remediation': 'Disable public access and use private endpoints'
+                }
+            },
+            'azure_vm': {
+                'no_disk_encryption': {
+                    'description': 'Azure VM has no disk encryption',
+                    'severity': 'HIGH',
+                    'check': self._check_azure_vm_disk_encryption,
+                    'remediation': 'Enable disk encryption for virtual machines'
+                },
+                'external_ip': {
+                    'description': 'Azure VM has external IP',
+                    'severity': 'MEDIUM',
+                    'check': self._check_azure_vm_external_ip,
+                    'remediation': 'Use private IPs and load balancers'
+                },
+                'no_nsg': {
+                    'description': 'Azure VM has no network security group',
+                    'severity': 'HIGH',
+                    'check': self._check_azure_vm_nsg,
+                    'remediation': 'Associate network security groups with VMs'
+                }
+            },
+            'azure_keyvault': {
+                'soft_delete_disabled': {
+                    'description': 'Azure Key Vault has soft delete disabled',
+                    'severity': 'HIGH',
+                    'check': self._check_azure_keyvault_soft_delete,
+                    'remediation': 'Enable soft delete for Key Vault'
+                },
+                'purge_protection_disabled': {
+                    'description': 'Azure Key Vault has purge protection disabled',
+                    'severity': 'MEDIUM',
+                    'check': self._check_azure_keyvault_purge_protection,
+                    'remediation': 'Enable purge protection for Key Vault'
+                }
+            },
+            # GCP misconfiguration rules
+            'gcp_iam': {
+                'service_account_keys': {
+                    'description': 'GCP service account has keys (should use workload identity)',
+                    'severity': 'HIGH',
+                    'check': self._check_gcp_service_account_keys,
+                    'remediation': 'Use workload identity instead of service account keys'
+                },
+                'overly_permissive_role': {
+                    'description': 'GCP IAM role is overly permissive',
+                    'severity': 'CRITICAL',
+                    'check': self._check_gcp_overly_permissive_role,
+                    'remediation': 'Apply principle of least privilege to IAM roles'
+                },
+                'no_mfa_enforcement': {
+                    'description': 'GCP has no MFA enforcement',
+                    'severity': 'HIGH',
+                    'check': self._check_gcp_mfa_enforcement,
+                    'remediation': 'Enable MFA enforcement for IAM users'
+                }
+            },
+            'gcp_storage': {
+                'public_access': {
+                    'description': 'GCP Cloud Storage bucket has public access',
+                    'severity': 'CRITICAL',
+                    'check': self._check_gcp_storage_public_access,
+                    'remediation': 'Remove public access from Cloud Storage buckets'
+                },
+                'no_encryption': {
+                    'description': 'GCP Cloud Storage bucket has no encryption',
+                    'severity': 'HIGH',
+                    'check': self._check_gcp_storage_encryption,
+                    'remediation': 'Enable encryption for Cloud Storage buckets'
+                },
+                'no_versioning': {
+                    'description': 'GCP Cloud Storage bucket has versioning disabled',
+                    'severity': 'MEDIUM',
+                    'check': self._check_gcp_storage_versioning,
+                    'remediation': 'Enable versioning for data protection'
+                }
+            },
+            'gcp_compute': {
+                'external_ip': {
+                    'description': 'GCP Compute Engine instance has external IP',
+                    'severity': 'MEDIUM',
+                    'check': self._check_gcp_compute_external_ip,
+                    'remediation': 'Use private IPs and load balancers'
+                },
+                'no_disk_encryption': {
+                    'description': 'GCP Compute Engine instance has no disk encryption',
+                    'severity': 'HIGH',
+                    'check': self._check_gcp_compute_disk_encryption,
+                    'remediation': 'Enable disk encryption for Compute Engine instances'
+                },
+                'no_firewall_rules': {
+                    'description': 'GCP Compute Engine instance has no firewall rules',
+                    'severity': 'HIGH',
+                    'check': self._check_gcp_compute_firewall_rules,
+                    'remediation': 'Configure firewall rules for Compute Engine instances'
+                }
             }
         }
     
     def scan_misconfigurations(self, events: List[Dict]) -> Dict:
-        """Scan for misconfigurations in AWS resources"""
-        logger.info(f"Starting misconfiguration scan on {len(events)} events")
+        """Scan for misconfigurations in multi-cloud resources (AWS, Azure, GCP)"""
+        logger.info(f"Starting multi-cloud misconfiguration scan on {len(events)} events")
         
         # Group events by service
         service_events = self._group_events_by_service(events)

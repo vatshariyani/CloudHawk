@@ -2,12 +2,12 @@ alerting:
   channels:
     email:
       enabled: true
-      from_email: test@example.com
-      password: testpassword
+      from_email: ''
+      password: ''
       smtp_port: 587
-      smtp_server: smtp.gmail.com
-      to_email: test@example.com
-      username: test@example.com
+      smtp_server: ''
+      to_email: ''
+      username: ''
     slack:
       channel: '#security-alerts'
       enabled: false
@@ -22,7 +22,26 @@ aws:
   - iam
   - cloudtrail
   - guardduty
+azure:
+  max_events_per_service: 1000
+  services:
+  - storage
+  - vm
+  - keyvault
+  - security_center
+  - activity_log
+  subscription_id: ''
 detection:
   rule_engine:
     chunk_size: 100
     threads: 4
+gcp:
+  max_events_per_service: 1000
+  project_id: ''
+  services:
+  - iam
+  - storage
+  - compute
+  - logging
+  - security_command_center
+  - asset_inventory

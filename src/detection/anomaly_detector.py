@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class AnomalyDetector:
-    """Anomaly detection engine for security events"""
+    """Multi-cloud anomaly detection engine for AWS, Azure, and GCP security events"""
     
     def __init__(self, config: Dict = None):
         """Initialize the anomaly detector"""

@@ -55,6 +55,12 @@
                     <i class="fas fa-list"></i> Detection Rules ({{ rules|length }} rules)
                 </h5>
                 <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-success" onclick="showAddRuleModal()">
+                        <i class="fas fa-plus"></i> Add Rule
+                    </button>
+                    <button type="button" class="btn btn-sm btn-warning" onclick="showBulkEditModal()">
+                        <i class="fas fa-edit"></i> Bulk Edit
+                    </button>
                     <button type="button" class="btn btn-sm btn-outline-info" onclick="sendNotification()">
                         <i class="fas fa-envelope"></i> Send Notification
                     </button>
@@ -67,22 +73,74 @@
                 </div>
             </div>
             <div class="card-body">
+                <!-- Filter Controls -->
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label for="serviceFilter" class="form-label">Filter by Service:</label>
+                        <select class="form-select" id="serviceFilter" onchange="filterRules()">
+                            <option value="">All Services</option>
+                            <option value="AWS">AWS</option>
+                            <option value="Azure">Azure</option>
+                            <option value="GCP">GCP</option>
+                            <option value="EC2">EC2</option>
+                            <option value="S3">S3</option>
+                            <option value="IAM">IAM</option>
+                            <option value="AZURE_STORAGE">Azure Storage</option>
+                            <option value="AZURE_VM">Azure VM</option>
+                            <option value="GCP_STORAGE">GCP Storage</option>
+                            <option value="GCP_COMPUTE">GCP Compute</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="severityFilter" class="form-label">Filter by Severity:</label>
+                        <select class="form-select" id="severityFilter" onchange="filterRules()">
+                            <option value="">All Severities</option>
+                            <option value="CRITICAL">Critical</option>
+                            <option value="HIGH">High</option>
+                            <option value="MEDIUM">Medium</option>
+                            <option value="LOW">Low</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="searchFilter" class="form-label">Search:</label>
+                        <input type="text" class="form-control" id="searchFilter" placeholder="Search rules..." onkeyup="filterRules()">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Bulk Actions:</label>
+                        <div class="btn-group w-100" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="bulkDelete()">
+                                <i class="fas fa-trash"></i> Delete Selected
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-warning" onclick="bulkDisable()">
+                                <i class="fas fa-ban"></i> Disable Selected
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 {% if rules %}
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover" id="rulesTable">
                             <thead>
                                 <tr>
+                                    <th>
+                                        <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                    </th>
                                     <th>ID</th>
                                     <th>Title</th>
                                     <th>Service</th>
                                     <th>Severity</th>
+                                    <th>Status</th>
                                     <th>Description</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for rule in rules %}
-                                <tr>
+                                <tr data-service="{{ rule.service }}" data-severity="{{ rule.severity }}" data-title="{{ rule.title|lower }}" data-description="{{ rule.description|lower }}">
+                                    <td>
+                                        <input type="checkbox" class="rule-checkbox" value="{{ rule.id }}">
+                                    </td>
                                     <td>
                                         <code>{{ rule.id }}</code>
                                     </td>
@@ -98,14 +156,25 @@
                                         </span>
                                     </td>
                                     <td>
+                                        <span class="badge bg-success">Active</span>
+                                    </td>
+                                    <td>
                                         <small class="text-muted">{{ rule.description[:100] }}{% if rule.description|length > 100 %}...{% endif %}</small>
                                     </td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-primary" type="button" 
-                                                data-bs-toggle="collapse" data-bs-target="#rule-{{ loop.index }}" 
-                                                aria-expanded="false">
-                                            <i class="fas fa-eye"></i> View
-                                        </button>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-primary" type="button" 
+                                                    data-bs-toggle="collapse" data-bs-target="#rule-{{ loop.index }}" 
+                                                    aria-expanded="false">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-warning" onclick="editRule('{{ rule.id }}')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteRule('{{ rule.id }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                                 <tr class="collapse" id="rule-{{ loop.index }}">
@@ -229,10 +298,732 @@
         </div>
     </div>
 </div>
+
+<!-- Add Rule Modal -->
+<div class="modal fade" id="addRuleModal" tabindex="-1" aria-labelledby="addRuleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addRuleModalLabel">
+                    <i class="fas fa-plus"></i> Add New Security Rule
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addRuleForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="ruleId" class="form-label">Rule ID *</label>
+                            <input type="text" class="form-control" id="ruleId" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="ruleTitle" class="form-label">Title *</label>
+                            <input type="text" class="form-control" id="ruleTitle" required>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label for="ruleService" class="form-label">Service *</label>
+                            <select class="form-select" id="ruleService" required>
+                                <option value="">Select Service</option>
+                                <option value="AWS">AWS</option>
+                                <option value="Azure">Azure</option>
+                                <option value="GCP">GCP</option>
+                                <option value="EC2">EC2</option>
+                                <option value="S3">S3</option>
+                                <option value="IAM">IAM</option>
+                                <option value="AZURE_STORAGE">Azure Storage</option>
+                                <option value="AZURE_VM">Azure VM</option>
+                                <option value="GCP_STORAGE">GCP Storage</option>
+                                <option value="GCP_COMPUTE">GCP Compute</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="ruleSeverity" class="form-label">Severity *</label>
+                            <select class="form-select" id="ruleSeverity" required>
+                                <option value="">Select Severity</option>
+                                <option value="CRITICAL">Critical</option>
+                                <option value="HIGH">High</option>
+                                <option value="MEDIUM">Medium</option>
+                                <option value="LOW">Low</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <label for="ruleDescription" class="form-label">Description *</label>
+                            <textarea class="form-control" id="ruleDescription" rows="3" required></textarea>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <label for="ruleCondition" class="form-label">Condition *</label>
+                            <textarea class="form-control" id="ruleCondition" rows="4" required placeholder="e.g., source == 'AWS_S3' and event_type == 'PUBLIC_ACCESS'"></textarea>
+                            <div class="form-text">Use event fields like source, event_type, severity, etc.</div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <label for="ruleRemediation" class="form-label">Remediation</label>
+                            <textarea class="form-control" id="ruleRemediation" rows="2" placeholder="Steps to fix this security issue"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="saveNewRule()">
+                    <i class="fas fa-save"></i> Save Rule
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Rule Modal -->
+<div class="modal fade" id="editRuleModal" tabindex="-1" aria-labelledby="editRuleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editRuleModalLabel">
+                    <i class="fas fa-edit"></i> Edit Security Rule
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editRuleForm">
+                    <input type="hidden" id="editRuleId">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="editRuleTitle" class="form-label">Title *</label>
+                            <input type="text" class="form-control" id="editRuleTitle" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editRuleService" class="form-label">Service *</label>
+                            <select class="form-select" id="editRuleService" required>
+                                <option value="">Select Service</option>
+                                <option value="AWS">AWS</option>
+                                <option value="Azure">Azure</option>
+                                <option value="GCP">GCP</option>
+                                <option value="EC2">EC2</option>
+                                <option value="S3">S3</option>
+                                <option value="IAM">IAM</option>
+                                <option value="AZURE_STORAGE">Azure Storage</option>
+                                <option value="AZURE_VM">Azure VM</option>
+                                <option value="GCP_STORAGE">GCP Storage</option>
+                                <option value="GCP_COMPUTE">GCP Compute</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label for="editRuleSeverity" class="form-label">Severity *</label>
+                            <select class="form-select" id="editRuleSeverity" required>
+                                <option value="">Select Severity</option>
+                                <option value="CRITICAL">Critical</option>
+                                <option value="HIGH">High</option>
+                                <option value="MEDIUM">Medium</option>
+                                <option value="LOW">Low</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editRuleStatus" class="form-label">Status</label>
+                            <select class="form-select" id="editRuleStatus">
+                                <option value="active">Active</option>
+                                <option value="disabled">Disabled</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <label for="editRuleDescription" class="form-label">Description *</label>
+                            <textarea class="form-control" id="editRuleDescription" rows="3" required></textarea>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <label for="editRuleCondition" class="form-label">Condition *</label>
+                            <textarea class="form-control" id="editRuleCondition" rows="4" required></textarea>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <label for="editRuleRemediation" class="form-label">Remediation</label>
+                            <textarea class="form-control" id="editRuleRemediation" rows="2"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveEditedRule()">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Edit Modal -->
+<div class="modal fade" id="bulkEditModal" tabindex="-1" aria-labelledby="bulkEditModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkEditModalLabel">
+                    <i class="fas fa-edit"></i> Bulk Edit Rules
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Select rules using checkboxes, then choose bulk actions below.
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="bulkSeverity" class="form-label">Change Severity:</label>
+                        <select class="form-select" id="bulkSeverity">
+                            <option value="">No Change</option>
+                            <option value="CRITICAL">Critical</option>
+                            <option value="HIGH">High</option>
+                            <option value="MEDIUM">Medium</option>
+                            <option value="LOW">Low</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="bulkStatus" class="form-label">Change Status:</label>
+                        <select class="form-select" id="bulkStatus">
+                            <option value="">No Change</option>
+                            <option value="active">Enable</option>
+                            <option value="disabled">Disable</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <label for="bulkService" class="form-label">Change Service:</label>
+                        <select class="form-select" id="bulkService">
+                            <option value="">No Change</option>
+                            <option value="AWS">AWS</option>
+                            <option value="Azure">Azure</option>
+                            <option value="GCP">GCP</option>
+                            <option value="EC2">EC2</option>
+                            <option value="S3">S3</option>
+                            <option value="IAM">IAM</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="applyBulkChanges()">
+                    <i class="fas fa-save"></i> Apply Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Rule Modal -->
+<div class="modal fade" id="viewRuleModal" tabindex="-1" aria-labelledby="viewRuleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewRuleModalLabel">
+                    <i class="fas fa-eye"></i> View Security Rule
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Rule Information</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>ID:</strong></td>
+                                <td><code id="viewRuleId"></code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Title:</strong></td>
+                                <td id="viewRuleTitle"></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Service:</strong></td>
+                                <td><span class="badge bg-secondary" id="viewRuleService"></span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Severity:</strong></td>
+                                <td><span class="badge bg-danger" id="viewRuleSeverity"></span></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Rule Details</h6>
+                        <div class="mb-3">
+                            <strong>Description:</strong>
+                            <p id="viewRuleDescription" class="mt-1"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6 class="text-primary">Condition</h6>
+                        <div class="bg-light p-3 rounded">
+                            <code id="viewRuleCondition" class="d-block"></code>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6 class="text-primary">Remediation</h6>
+                        <div class="alert alert-info">
+                            <i class="fas fa-lightbulb"></i>
+                            <span id="viewRuleRemediation"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-warning" onclick="editRuleFromView()">
+                    <i class="fas fa-edit"></i> Edit Rule
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+// Global variables
+let allRules = [];
+let filteredRules = [];
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    loadRules();
+});
+
+// Load rules from server
+async function loadRules() {
+    try {
+        const response = await fetch('/api/rules');
+        const data = await response.json();
+        allRules = data.rules || [];
+        filteredRules = [...allRules];
+        updateRulesTable();
+    } catch (error) {
+        console.error('Error loading rules:', error);
+        showAlert('Error loading rules', 'danger');
+    }
+}
+
+// Filter rules based on criteria
+function filterRules() {
+    const serviceFilter = document.getElementById('serviceFilter').value;
+    const severityFilter = document.getElementById('severityFilter').value;
+    const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
+    
+    filteredRules = allRules.filter(rule => {
+        const matchesService = !serviceFilter || rule.service === serviceFilter;
+        const matchesSeverity = !severityFilter || rule.severity === severityFilter;
+        const matchesSearch = !searchFilter || 
+            rule.title.toLowerCase().includes(searchFilter) ||
+            rule.description.toLowerCase().includes(searchFilter) ||
+            rule.id.toLowerCase().includes(searchFilter);
+        
+        return matchesService && matchesSeverity && matchesSearch;
+    });
+    
+    updateRulesTable();
+}
+
+// Update the rules table display
+function updateRulesTable() {
+    const tbody = document.querySelector('#rulesTable tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    filteredRules.forEach((rule, index) => {
+        const row = document.createElement('tr');
+        row.setAttribute('data-service', rule.service);
+        row.setAttribute('data-severity', rule.severity);
+        row.setAttribute('data-title', rule.title.toLowerCase());
+        row.setAttribute('data-description', rule.description.toLowerCase());
+        
+        const severityClass = rule.severity === 'CRITICAL' ? 'danger' : 
+                            rule.severity === 'HIGH' ? 'warning' : 
+                            rule.severity === 'MEDIUM' ? 'info' : 'success';
+        
+        row.innerHTML = `
+            <td>
+                <input type="checkbox" class="rule-checkbox" value="${rule.id}">
+            </td>
+            <td><code>${rule.id}</code></td>
+            <td><strong>${rule.title}</strong></td>
+            <td><span class="badge bg-secondary">${rule.service}</span></td>
+            <td><span class="badge bg-${severityClass}">${rule.severity}</span></td>
+            <td><span class="badge bg-success">Active</span></td>
+            <td><small class="text-muted">${rule.description.substring(0, 100)}${rule.description.length > 100 ? '...' : ''}</small></td>
+            <td>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-sm btn-outline-primary" type="button" 
+                            onclick="toggleRuleDetails('${rule.id}')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning" onclick="editRule('${rule.id}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteRule('${rule.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+}
+
+// Show add rule modal
+function showAddRuleModal() {
+    document.getElementById('addRuleForm').reset();
+    const modal = new bootstrap.Modal(document.getElementById('addRuleModal'));
+    modal.show();
+}
+
+// Show bulk edit modal
+function showBulkEditModal() {
+    const selectedRules = getSelectedRules();
+    if (selectedRules.length === 0) {
+        showAlert('Please select rules to edit', 'warning');
+        return;
+    }
+    
+    const modal = new bootstrap.Modal(document.getElementById('bulkEditModal'));
+    modal.show();
+}
+
+// Save new rule
+async function saveNewRule() {
+    const form = document.getElementById('addRuleForm');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const newRule = {
+        id: document.getElementById('ruleId').value,
+        title: document.getElementById('ruleTitle').value,
+        service: document.getElementById('ruleService').value,
+        severity: document.getElementById('ruleSeverity').value,
+        description: document.getElementById('ruleDescription').value,
+        condition: document.getElementById('ruleCondition').value,
+        remediation: document.getElementById('ruleRemediation').value
+    };
+    
+    try {
+        const response = await fetch('/api/rules/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(newRule)
+        });
+        
+        if (response.ok) {
+            showAlert('Rule added successfully', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('addRuleModal')).hide();
+            loadRules();
+        } else {
+            const error = await response.json();
+            showAlert('Error adding rule: ' + error.message, 'danger');
+        }
+    } catch (error) {
+        console.error('Error adding rule:', error);
+        showAlert('Error adding rule', 'danger');
+    }
+}
+
+// Edit rule
+async function editRule(ruleId) {
+    const rule = allRules.find(r => r.id === ruleId);
+    if (!rule) return;
+    
+    // Populate edit form
+    document.getElementById('editRuleId').value = rule.id;
+    document.getElementById('editRuleTitle').value = rule.title;
+    document.getElementById('editRuleService').value = rule.service;
+    document.getElementById('editRuleSeverity').value = rule.severity;
+    document.getElementById('editRuleDescription').value = rule.description;
+    document.getElementById('editRuleCondition').value = rule.condition;
+    document.getElementById('editRuleRemediation').value = rule.remediation || '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('editRuleModal'));
+    modal.show();
+}
+
+// Save edited rule
+async function saveEditedRule() {
+    const form = document.getElementById('editRuleForm');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const ruleId = document.getElementById('editRuleId').value;
+    const updatedRule = {
+        id: ruleId,
+        title: document.getElementById('editRuleTitle').value,
+        service: document.getElementById('editRuleService').value,
+        severity: document.getElementById('editRuleSeverity').value,
+        description: document.getElementById('editRuleDescription').value,
+        condition: document.getElementById('editRuleCondition').value,
+        remediation: document.getElementById('editRuleRemediation').value,
+        status: document.getElementById('editRuleStatus').value
+    };
+    
+    try {
+        const response = await fetch('/api/rules/edit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updatedRule)
+        });
+        
+        if (response.ok) {
+            showAlert('Rule updated successfully', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editRuleModal')).hide();
+            loadRules();
+        } else {
+            const error = await response.json();
+            showAlert('Error updating rule: ' + error.message, 'danger');
+        }
+    } catch (error) {
+        console.error('Error updating rule:', error);
+        showAlert('Error updating rule', 'danger');
+    }
+}
+
+// Delete rule
+async function deleteRule(ruleId) {
+    if (!confirm('Are you sure you want to delete this rule?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/rules/delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ id: ruleId })
+        });
+        
+        if (response.ok) {
+            showAlert('Rule deleted successfully', 'success');
+            loadRules();
+        } else {
+            const error = await response.json();
+            showAlert('Error deleting rule: ' + error.message, 'danger');
+        }
+    } catch (error) {
+        console.error('Error deleting rule:', error);
+        showAlert('Error deleting rule', 'danger');
+    }
+}
+
+// Get selected rules
+function getSelectedRules() {
+    const checkboxes = document.querySelectorAll('.rule-checkbox:checked');
+    return Array.from(checkboxes).map(cb => cb.value);
+}
+
+// Toggle select all
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.rule-checkbox');
+    
+    checkboxes.forEach(cb => {
+        cb.checked = selectAll.checked;
+    });
+}
+
+// Bulk delete
+async function bulkDelete() {
+    const selectedRules = getSelectedRules();
+    if (selectedRules.length === 0) {
+        showAlert('Please select rules to delete', 'warning');
+        return;
+    }
+    
+    if (!confirm(`Are you sure you want to delete ${selectedRules.length} rules?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/rules/bulk-delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ids: selectedRules })
+        });
+        
+        if (response.ok) {
+            showAlert(`${selectedRules.length} rules deleted successfully`, 'success');
+            loadRules();
+        } else {
+            const error = await response.json();
+            showAlert('Error deleting rules: ' + error.message, 'danger');
+        }
+    } catch (error) {
+        console.error('Error deleting rules:', error);
+        showAlert('Error deleting rules', 'danger');
+    }
+}
+
+// Bulk disable
+async function bulkDisable() {
+    const selectedRules = getSelectedRules();
+    if (selectedRules.length === 0) {
+        showAlert('Please select rules to disable', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/rules/bulk-disable', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ids: selectedRules })
+        });
+        
+        if (response.ok) {
+            showAlert(`${selectedRules.length} rules disabled successfully`, 'success');
+            loadRules();
+        } else {
+            const error = await response.json();
+            showAlert('Error disabling rules: ' + error.message, 'danger');
+        }
+    } catch (error) {
+        console.error('Error disabling rules:', error);
+        showAlert('Error disabling rules', 'danger');
+    }
+}
+
+// Apply bulk changes
+async function applyBulkChanges() {
+    const selectedRules = getSelectedRules();
+    if (selectedRules.length === 0) {
+        showAlert('Please select rules to modify', 'warning');
+        return;
+    }
+    
+    const changes = {
+        ids: selectedRules,
+        severity: document.getElementById('bulkSeverity').value,
+        status: document.getElementById('bulkStatus').value,
+        service: document.getElementById('bulkService').value
+    };
+    
+    // Remove empty values
+    Object.keys(changes).forEach(key => {
+        if (changes[key] === '') {
+            delete changes[key];
+        }
+    });
+    
+    if (Object.keys(changes).length <= 1) { // Only IDs
+        showAlert('Please select at least one change to apply', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/rules/bulk-edit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(changes)
+        });
+        
+        if (response.ok) {
+            showAlert(`${selectedRules.length} rules updated successfully`, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('bulkEditModal')).hide();
+            loadRules();
+        } else {
+            const error = await response.json();
+            showAlert('Error updating rules: ' + error.message, 'danger');
+        }
+    } catch (error) {
+        console.error('Error updating rules:', error);
+        showAlert('Error updating rules', 'danger');
+    }
+}
+
+// Toggle rule details
+function toggleRuleDetails(ruleId) {
+    const rule = allRules.find(r => r.id === ruleId);
+    if (!rule) return;
+    
+    // Populate rule details modal
+    document.getElementById('viewRuleId').textContent = rule.id;
+    document.getElementById('viewRuleTitle').textContent = rule.title;
+    document.getElementById('viewRuleService').textContent = rule.service;
+    document.getElementById('viewRuleSeverity').textContent = rule.severity;
+    document.getElementById('viewRuleDescription').textContent = rule.description;
+    document.getElementById('viewRuleCondition').textContent = rule.condition;
+    document.getElementById('viewRuleRemediation').textContent = rule.remediation || 'No remediation provided';
+    
+    // Update severity badge color
+    const severityBadge = document.getElementById('viewRuleSeverity');
+    const severityClass = rule.severity === 'CRITICAL' ? 'danger' : 
+                        rule.severity === 'HIGH' ? 'warning' : 
+                        rule.severity === 'MEDIUM' ? 'info' : 'success';
+    severityBadge.className = `badge bg-${severityClass}`;
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('viewRuleModal'));
+    modal.show();
+}
+
+// Edit rule from view modal
+function editRuleFromView() {
+    const ruleId = document.getElementById('viewRuleId').textContent;
+    
+    // Close view modal
+    bootstrap.Modal.getInstance(document.getElementById('viewRuleModal')).hide();
+    
+    // Open edit modal
+    setTimeout(() => {
+        editRule(ruleId);
+    }, 300);
+}
+
+// Show alert
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.container-fluid');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
 // Function to send notification about rule changes
 function sendNotification() {
     const button = event.target;

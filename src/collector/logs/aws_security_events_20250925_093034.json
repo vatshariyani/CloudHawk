@@ -1,0 +1,2611 @@
+[
+  {
+    "timestamp": "2025-09-25T04:00:20.620649",
+    "source": "AWS_EC2_SG",
+    "resource_id": "sg-007ac448ce2979195",
+    "event_type": "SECURITY_GROUP_RULE",
+    "severity": "CRITICAL",
+    "description": "Security group 'launch-wizard-1' allows tcp from 0.0.0.0/0 on ports 22-22",
+    "raw_event": {
+      "GroupId": "sg-007ac448ce2979195",
+      "IpPermissionsEgress": [
+        {
+          "IpProtocol": "-1",
+          "UserIdGroupPairs": [],
+          "IpRanges": [
+            {
+              "CidrIp": "0.0.0.0/0"
+            }
+          ],
+          "Ipv6Ranges": [],
+          "PrefixListIds": []
+        }
+      ],
+      "VpcId": "vpc-0516dc055397219cb",
+      "SecurityGroupArn": "arn:aws:ec2:us-east-1:181179258416:security-group/sg-007ac448ce2979195",
+      "OwnerId": "181179258416",
+      "GroupName": "launch-wizard-1",
+      "Description": "launch-wizard-1 created 2025-09-04T17:20:40.344Z",
+      "IpPermissions": [
+        {
+          "IpProtocol": "tcp",
+          "FromPort": 22,
+          "ToPort": 22,
+          "UserIdGroupPairs": [],
+          "IpRanges": [
+            {
+              "CidrIp": "0.0.0.0/0"
+            }
+          ],
+          "Ipv6Ranges": [],
+          "PrefixListIds": []
+        }
+      ]
+    },
+    "region": "us-east-1",
+    "sg": {
+      "name": "launch-wizard-1",
+      "id": "sg-007ac448ce2979195",
+      "protocol": "tcp",
+      "from_port": 22,
+      "to_port": 22,
+      "cidr": "0.0.0.0/0",
+      "rule_string": "tcp/22-22,0.0.0.0/0"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:27.192002",
+    "source": "AWS_IAM_ACCOUNT",
+    "resource_id": "ACCOUNT",
+    "event_type": "WEAK_PASSWORD_POLICY",
+    "severity": "HIGH",
+    "description": "Account has weak password policy (min length: 0)",
+    "raw_event": {
+      "SummaryMap": {
+        "GroupPolicySizeQuota": 5120,
+        "InstanceProfilesQuota": 1000,
+        "Policies": 0,
+        "GroupsPerUserQuota": 10,
+        "InstanceProfiles": 0,
+        "AttachedPoliciesPerUserQuota": 10,
+        "Users": 0,
+        "PoliciesQuota": 1500,
+        "Providers": 0,
+        "AccountMFAEnabled": 0,
+        "AccessKeysPerUserQuota": 2,
+        "AssumeRolePolicySizeQuota": 2048,
+        "PolicyVersionsInUseQuota": 10000,
+        "GlobalEndpointTokenVersion": 1,
+        "VersionsPerPolicyQuota": 5,
+        "AttachedPoliciesPerGroupQuota": 10,
+        "PolicySizeQuota": 6144,
+        "Groups": 0,
+        "AccountSigningCertificatesPresent": 0,
+        "UsersQuota": 5000,
+        "ServerCertificatesQuota": 20,
+        "MFADevices": 0,
+        "UserPolicySizeQuota": 2048,
+        "PolicyVersionsInUse": 2,
+        "ServerCertificates": 0,
+        "Roles": 2,
+        "RolesQuota": 1000,
+        "SigningCertificatesPerUserQuota": 2,
+        "MFADevicesInUse": 0,
+        "RolePolicySizeQuota": 10240,
+        "AttachedPoliciesPerRoleQuota": 10,
+        "AccountAccessKeysPresent": 1,
+        "AccountPasswordPresent": 1,
+        "GroupsQuota": 300
+      },
+      "ResponseMetadata": {
+        "RequestId": "4477c98b-45a5-4843-a200-b9ae6b132d73",
+        "HTTPStatusCode": 200,
+        "HTTPHeaders": {
+          "date": "Thu, 25 Sep 2025 04:00:26 GMT",
+          "x-amzn-requestid": "4477c98b-45a5-4843-a200-b9ae6b132d73",
+          "content-type": "text/xml",
+          "content-length": "3482"
+        },
+        "RetryAttempts": 0
+      }
+    },
+    "region": "us-east-1",
+    "account": {
+      "min_password_length": 0,
+      "password_policy": {
+        "GroupPolicySizeQuota": 5120,
+        "InstanceProfilesQuota": 1000,
+        "Policies": 0,
+        "GroupsPerUserQuota": 10,
+        "InstanceProfiles": 0,
+        "AttachedPoliciesPerUserQuota": 10,
+        "Users": 0,
+        "PoliciesQuota": 1500,
+        "Providers": 0,
+        "AccountMFAEnabled": 0,
+        "AccessKeysPerUserQuota": 2,
+        "AssumeRolePolicySizeQuota": 2048,
+        "PolicyVersionsInUseQuota": 10000,
+        "GlobalEndpointTokenVersion": 1,
+        "VersionsPerPolicyQuota": 5,
+        "AttachedPoliciesPerGroupQuota": 10,
+        "PolicySizeQuota": 6144,
+        "Groups": 0,
+        "AccountSigningCertificatesPresent": 0,
+        "UsersQuota": 5000,
+        "ServerCertificatesQuota": 20,
+        "MFADevices": 0,
+        "UserPolicySizeQuota": 2048,
+        "PolicyVersionsInUse": 2,
+        "ServerCertificates": 0,
+        "Roles": 2,
+        "RolesQuota": 1000,
+        "SigningCertificatesPerUserQuota": 2,
+        "MFADevicesInUse": 0,
+        "RolePolicySizeQuota": 10240,
+        "AttachedPoliciesPerRoleQuota": 10,
+        "AccountAccessKeysPresent": 1,
+        "AccountPasswordPresent": 1,
+        "GroupsQuota": 300
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.777840",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListDetectors",
+    "raw_event": {
+      "eventVersion": "1.09",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-25T02:45:49Z",
+      "eventSource": "guardduty.amazonaws.com",
+      "eventName": "ListDetectors",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,D,b cfg/retry-mode#legacy Botocore/1.40.37",
+      "errorCode": "SubscriptionRequiredException",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "0e29a06c-17a5-4570-9267-30e438d5de63",
+      "eventID": "8d4219bb-1cc4-46ea-a68b-f5d8c4b2cc06",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management"
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListDetectors",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.777872",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: LookupEvents",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-25T02:45:47Z",
+      "eventSource": "cloudtrail.amazonaws.com",
+      "eventName": "LookupEvents",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,D,b cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "startTime": "Sep 24, 2025, 2:45:43 AM",
+        "endTime": "Sep 25, 2025, 2:45:43 AM",
+        "maxResults": 50
+      },
+      "responseElements": null,
+      "requestID": "cc521509-1ab4-403c-9990-1fd9b69f02c8",
+      "eventID": "6b153da0-a442-4c55-8317-d406c2375bcb",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "cloudtrail.us-east-1.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "LookupEvents",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.777887",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: GetAccountSummary",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-25T02:45:44Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "GetAccountSummary",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,D,b cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "98ac1a1e-6323-49de-a6d8-914f20ee4c04",
+      "eventID": "a68858fd-2181-4dd7-978e-f85befa930ac",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "GetAccountSummary",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.777903",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListAttachedRolePolicies",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-25T02:45:43Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListAttachedRolePolicies",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,D,b cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "roleName": "AWSServiceRoleForTrustedAdvisor"
+      },
+      "responseElements": null,
+      "requestID": "b48c4553-610f-4b36-9f75-90097051d446",
+      "eventID": "05b91fc4-1533-40ff-bf81-4b4da2713f5d",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListAttachedRolePolicies",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.777922",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListAttachedRolePolicies",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-25T02:45:43Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListAttachedRolePolicies",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,D,b cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "roleName": "AWSServiceRoleForSupport"
+      },
+      "responseElements": null,
+      "requestID": "cd7ca372-b421-4fde-8616-21188f04f59b",
+      "eventID": "355498bd-7617-44d6-b142-093de191d564",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListAttachedRolePolicies",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.777943",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListUsers",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-25T02:45:42Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListUsers",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,D,b cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "c2c1e89c-8c74-4dda-a3f3-abb553124dea",
+      "eventID": "286b2527-c441-4e4e-9a75-5f592500312f",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListUsers",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.777967",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListRoles",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-25T02:45:42Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListRoles",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,D,b cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "534f4a28-976f-4316-8e4a-911a468988c1",
+      "eventID": "a9b8e1bc-b36b-4111-9e77-ede43f02c28e",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListRoles",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.777989",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListBuckets",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-25T02:45:42Z",
+      "eventSource": "s3.amazonaws.com",
+      "eventName": "ListBuckets",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "[Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,D,b cfg/retry-mode#legacy Botocore/1.40.37]",
+      "requestParameters": {
+        "Host": "s3.amazonaws.com"
+      },
+      "responseElements": null,
+      "additionalEventData": {
+        "SignatureVersion": "SigV4",
+        "CipherSuite": "TLS_AES_128_GCM_SHA256",
+        "bytesTransferredIn": 0,
+        "AuthenticationMethod": "AuthHeader",
+        "x-amz-id-2": "YKZUdSyQZiMsUjaHygYFpisJSo73y4rpV65rhoHtPKq6XO2bCnJzDrj/QCDfybRYta9Jq0pP7a0=",
+        "bytesTransferredOut": 275
+      },
+      "requestID": "6T6X0RMAVJT4NE5M",
+      "eventID": "e0479d05-c065-4b14-88b3-cc2673ccc5c8",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "s3.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListBuckets",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778006",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: DescribeInstances",
+    "raw_event": {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-25T02:45:36Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "DescribeInstances",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/n,Z,D,b cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "instancesSet": {},
+        "filterSet": {}
+      },
+      "responseElements": null,
+      "requestID": "52f5f82c-3575-4e33-bc2e-41dfe4d1754d",
+      "eventID": "9b74c947-fc04-410f-a4d4-4cf333738dc9",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "ec2.us-east-1.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "DescribeInstances",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778022",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: DescribeSecurityGroups",
+    "raw_event": {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-25T02:45:35Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "DescribeSecurityGroups",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/n,Z,D,b cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "securityGroupSet": {},
+        "securityGroupIdSet": {},
+        "filterSet": {}
+      },
+      "responseElements": null,
+      "requestID": "76248a38-9a7a-429e-985c-710262f2278a",
+      "eventID": "6110ed8d-bfcf-40a9-8bfa-1bdba098ff96",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "ec2.us-east-1.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "DescribeSecurityGroups",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778037",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListUsers",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-25T02:45:31Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListUsers",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,D,b cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "maxItems": 1
+      },
+      "responseElements": null,
+      "requestID": "cc3566b3-b7ec-42de-9113-2802c893a1a9",
+      "eventID": "97bdd3d3-b725-43d2-aaa4-63275a0a3244",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListUsers",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778052",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListDetectors",
+    "raw_event": {
+      "eventVersion": "1.09",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:51:46Z",
+      "eventSource": "guardduty.amazonaws.com",
+      "eventName": "ListDetectors",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,Z,D cfg/retry-mode#legacy Botocore/1.40.37",
+      "errorCode": "SubscriptionRequiredException",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "209e6314-06de-4c25-ab6b-b779e033038a",
+      "eventID": "df477b78-bc15-4223-b17c-a53932b7fa6f",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management"
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListDetectors",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778071",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: LookupEvents",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:51:43Z",
+      "eventSource": "cloudtrail.amazonaws.com",
+      "eventName": "LookupEvents",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,Z,D cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "startTime": "Sep 23, 2025, 10:51:40 PM",
+        "endTime": "Sep 24, 2025, 10:51:40 PM",
+        "maxResults": 50
+      },
+      "responseElements": null,
+      "requestID": "749810d8-2948-4bea-8724-5479a0ba8f91",
+      "eventID": "6bfa56fd-0f0c-40fd-a91f-aca4c1f1ad4d",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "cloudtrail.us-east-1.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "LookupEvents",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778090",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: GetAccountSummary",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:51:40Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "GetAccountSummary",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,Z,D cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "d3d5ef47-5c1c-4db0-b9b9-e8a6ea3cad34",
+      "eventID": "8962f37f-ada2-40f4-9760-529ceb76aa56",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "GetAccountSummary",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778107",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListAttachedRolePolicies",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:51:40Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListAttachedRolePolicies",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,Z,D cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "roleName": "AWSServiceRoleForTrustedAdvisor"
+      },
+      "responseElements": null,
+      "requestID": "8fc7b8b6-8a43-4ddc-ad31-1e0d040ddac1",
+      "eventID": "e18d41bf-7b2d-4bfc-8c24-e3642d558e52",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListAttachedRolePolicies",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778123",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListAttachedRolePolicies",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:51:39Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListAttachedRolePolicies",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,Z,D cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "roleName": "AWSServiceRoleForSupport"
+      },
+      "responseElements": null,
+      "requestID": "abd62ec8-cb16-41ca-94c3-9a2e0a064ab0",
+      "eventID": "bc0e274a-1b79-4899-8680-05330a8626de",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListAttachedRolePolicies",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778141",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListRoles",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:51:39Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListRoles",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,Z,D cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "e55b7f52-57be-4c96-a288-9ee541dcfa48",
+      "eventID": "fc7305c1-889e-4514-878f-0bd0331d1b47",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListRoles",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778159",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListUsers",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:51:38Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListUsers",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,Z,D cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "9442478a-1325-4d23-b2a4-c4d68625f388",
+      "eventID": "2f7c2ed6-5295-4b77-88cb-a46d280724ea",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListUsers",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778179",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListBuckets",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:51:37Z",
+      "eventSource": "s3.amazonaws.com",
+      "eventName": "ListBuckets",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "[Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,Z,D cfg/retry-mode#legacy Botocore/1.40.37]",
+      "requestParameters": {
+        "Host": "s3.amazonaws.com"
+      },
+      "responseElements": null,
+      "additionalEventData": {
+        "SignatureVersion": "SigV4",
+        "CipherSuite": "TLS_AES_128_GCM_SHA256",
+        "bytesTransferredIn": 0,
+        "AuthenticationMethod": "AuthHeader",
+        "x-amz-id-2": "IaJHFNQ+toMaearUBXYwTwYxpMnn+2n7ZsX9dFvsmTTIM7OpW3aRfZ/1fZrjNfLElrnybv8f1U0=",
+        "bytesTransferredOut": 275
+      },
+      "requestID": "55S683BTJJWH4KDQ",
+      "eventID": "c1972133-8de1-4d2f-906d-c7b6b288dc1b",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "s3.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListBuckets",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778200",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: DescribeInstances",
+    "raw_event": {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:51:35Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "DescribeInstances",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/n,b,Z,D cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "instancesSet": {},
+        "filterSet": {}
+      },
+      "responseElements": null,
+      "requestID": "dafad9a4-f3b7-4803-9c36-0f25dc271e49",
+      "eventID": "22ad6726-963b-47c4-8294-1210418e26f5",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "ec2.us-east-1.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "DescribeInstances",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778221",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: DescribeSecurityGroups",
+    "raw_event": {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:51:35Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "DescribeSecurityGroups",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/n,b,Z,D cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "securityGroupSet": {},
+        "securityGroupIdSet": {},
+        "filterSet": {}
+      },
+      "responseElements": null,
+      "requestID": "abc115e9-38da-4ebb-b678-94bb76d63e6a",
+      "eventID": "bf752e67-322e-4944-9228-b25b73bebe63",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "ec2.us-east-1.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "DescribeSecurityGroups",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778403",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListUsers",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:51:31Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListUsers",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,Z,D cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "maxItems": 1
+      },
+      "responseElements": null,
+      "requestID": "8128c228-883f-4752-bd3e-22593f2286f2",
+      "eventID": "ae67aa63-7539-4e90-b86f-44329a14cba7",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListUsers",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778421",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListDetectors",
+    "raw_event": {
+      "eventVersion": "1.09",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:43:40Z",
+      "eventSource": "guardduty.amazonaws.com",
+      "eventName": "ListDetectors",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,b,D cfg/retry-mode#legacy Botocore/1.40.37",
+      "errorCode": "SubscriptionRequiredException",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "3db41599-6a9d-4be1-a6bb-7e336ddaf721",
+      "eventID": "8a285712-25bb-4b03-942e-1fbe7290b36b",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management"
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListDetectors",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778439",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: LookupEvents",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:43:37Z",
+      "eventSource": "cloudtrail.amazonaws.com",
+      "eventName": "LookupEvents",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,b,D cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "startTime": "Sep 23, 2025, 10:43:34 PM",
+        "endTime": "Sep 24, 2025, 10:43:34 PM",
+        "maxResults": 50
+      },
+      "responseElements": null,
+      "requestID": "ec075dea-2bf2-44b1-9bfe-1cae6783ec0c",
+      "eventID": "62101bf0-2073-41ac-b7ba-ac8348b2c0ee",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "cloudtrail.us-east-1.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "LookupEvents",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778455",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: GetAccountSummary",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:43:35Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "GetAccountSummary",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,b,D cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "6ca239ae-4c36-440a-ab87-bf96f521e240",
+      "eventID": "cd99e7b5-36e9-4800-ad20-7c498bf37b4e",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "GetAccountSummary",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778485",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListAttachedRolePolicies",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:43:34Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListAttachedRolePolicies",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,b,D cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "roleName": "AWSServiceRoleForTrustedAdvisor"
+      },
+      "responseElements": null,
+      "requestID": "0ff4724c-c56a-4649-85d3-f72f2ddcc060",
+      "eventID": "b9ed12be-e24f-4fb3-83a7-0dc5905f785a",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListAttachedRolePolicies",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778510",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListAttachedRolePolicies",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:43:33Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListAttachedRolePolicies",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,b,D cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "roleName": "AWSServiceRoleForSupport"
+      },
+      "responseElements": null,
+      "requestID": "70e49a5a-4cd0-4196-90c7-759a0a9b740a",
+      "eventID": "42f2d877-6b8a-46a8-a986-a7605b37e5cf",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListAttachedRolePolicies",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778538",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListRoles",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:43:33Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListRoles",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,b,D cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "e0ab7c23-6d33-4004-b463-9b44b7464b56",
+      "eventID": "6b56531f-3d0b-4b9f-819f-62917e2cd891",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListRoles",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778567",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListUsers",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:43:33Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListUsers",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,b,D cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "8207cba4-46ce-45a2-ae2d-0348c4a3caf9",
+      "eventID": "720c5b96-beb6-454c-ad76-9f611535ef05",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListUsers",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778595",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListBuckets",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:43:32Z",
+      "eventSource": "s3.amazonaws.com",
+      "eventName": "ListBuckets",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "[Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,b,D cfg/retry-mode#legacy Botocore/1.40.37]",
+      "requestParameters": {
+        "Host": "s3.amazonaws.com"
+      },
+      "responseElements": null,
+      "additionalEventData": {
+        "SignatureVersion": "SigV4",
+        "CipherSuite": "TLS_AES_128_GCM_SHA256",
+        "bytesTransferredIn": 0,
+        "AuthenticationMethod": "AuthHeader",
+        "x-amz-id-2": "UDc/q88wlFXBOGPTZH8nFuX/hUFsh4vU6pyD7GanXSSFMWEPlFOLG4anHgEwvgaM5ZD9rkRY7A4=",
+        "bytesTransferredOut": 234
+      },
+      "requestID": "GJY2W8ZJDFYTW61R",
+      "eventID": "3a57be11-5528-4fd7-8683-c20155211602",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "s3.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListBuckets",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778614",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: DescribeInstances",
+    "raw_event": {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:43:29Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "DescribeInstances",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,b,n,D cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "instancesSet": {},
+        "filterSet": {}
+      },
+      "responseElements": null,
+      "requestID": "11a45b9c-8276-4135-b4e8-3fe24a167482",
+      "eventID": "608db25d-74bc-4844-88e3-a5a497cce921",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "ec2.us-east-1.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "DescribeInstances",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778636",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: DescribeSecurityGroups",
+    "raw_event": {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:43:29Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "DescribeSecurityGroups",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,b,n,D cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "securityGroupSet": {},
+        "securityGroupIdSet": {},
+        "filterSet": {}
+      },
+      "responseElements": null,
+      "requestID": "ebbda060-6f00-4dff-8f24-4b27177da9b4",
+      "eventID": "6b762ee1-fa5b-4235-a3fe-026d99f8bb74",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "ec2.us-east-1.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "DescribeSecurityGroups",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778651",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListUsers",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:43:27Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListUsers",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,b,D cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "maxItems": 1
+      },
+      "responseElements": null,
+      "requestID": "10ab9d46-b8d6-4360-9693-f757cff670fa",
+      "eventID": "410c76d0-a5b3-4552-a14c-66ffa6f46937",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListUsers",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778668",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListDetectors",
+    "raw_event": {
+      "eventVersion": "1.09",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:19:10Z",
+      "eventSource": "guardduty.amazonaws.com",
+      "eventName": "ListDetectors",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,D,Z cfg/retry-mode#legacy Botocore/1.40.37",
+      "errorCode": "SubscriptionRequiredException",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "0b96a9c0-a27e-4d2e-a9d9-6850fb588f6b",
+      "eventID": "31d61a97-222f-40b2-b5c1-f3889214820d",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management"
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListDetectors",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778687",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: LookupEvents",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:19:08Z",
+      "eventSource": "cloudtrail.amazonaws.com",
+      "eventName": "LookupEvents",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,D,Z cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "startTime": "Sep 23, 2025, 10:19:03 PM",
+        "endTime": "Sep 24, 2025, 10:19:03 PM",
+        "maxResults": 50
+      },
+      "responseElements": null,
+      "requestID": "b8549ff3-160c-499c-b655-5a1e5c833050",
+      "eventID": "16aa3f99-453f-4114-844e-80ba06ebab13",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "cloudtrail.us-east-1.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "LookupEvents",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778702",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: GetAccountSummary",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:19:03Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "GetAccountSummary",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,D,Z cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "1529a734-a7b1-4089-8150-993ae647dbf5",
+      "eventID": "1f69cd97-641f-4aac-a7e3-ca62642c67a5",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "GetAccountSummary",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778719",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListAttachedRolePolicies",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:19:03Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListAttachedRolePolicies",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,D,Z cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "roleName": "AWSServiceRoleForSupport"
+      },
+      "responseElements": null,
+      "requestID": "ea9c7033-60d9-4021-a031-712e13581c3d",
+      "eventID": "52568798-a0d2-42bd-8dd6-ed4de2362b52",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListAttachedRolePolicies",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778736",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListAttachedRolePolicies",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:19:03Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListAttachedRolePolicies",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,D,Z cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "roleName": "AWSServiceRoleForTrustedAdvisor"
+      },
+      "responseElements": null,
+      "requestID": "95e4837e-760c-4fbb-8143-db9287060094",
+      "eventID": "62995185-db68-4ba4-9c45-de8ce9727136",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListAttachedRolePolicies",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778755",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListBuckets",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:19:02Z",
+      "eventSource": "s3.amazonaws.com",
+      "eventName": "ListBuckets",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "[Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,D,Z cfg/retry-mode#legacy Botocore/1.40.37]",
+      "requestParameters": {
+        "Host": "s3.amazonaws.com"
+      },
+      "responseElements": null,
+      "additionalEventData": {
+        "SignatureVersion": "SigV4",
+        "CipherSuite": "TLS_AES_128_GCM_SHA256",
+        "bytesTransferredIn": 0,
+        "AuthenticationMethod": "AuthHeader",
+        "x-amz-id-2": "MUQReTPx1PRKxQBrSMXaJu4pbIEHH7vgnryZGNQISdH4fmz6YgmnLi0WHGoj4XpMq9D6XCHRRfjhuirgdqj1B+A/J9KRHf4MRmtDmhXPyyY=",
+        "bytesTransferredOut": 234
+      },
+      "requestID": "QYPX5MZS18699TM8",
+      "eventID": "4d5b4dd6-2e5d-4573-bee8-e3a48d2abc29",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "s3.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListBuckets",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778774",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListUsers",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:19:02Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListUsers",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,D,Z cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "36e00ead-5c77-48b8-8644-f26febc5080e",
+      "eventID": "4fd97451-ba77-44af-bd0c-cc413f01a976",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListUsers",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778796",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListRoles",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:19:02Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListRoles",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,D,Z cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "6a6ba56f-bc09-47f8-9bb6-e78e3697d86e",
+      "eventID": "e1b6498b-53ea-4790-8b83-6e66d068c15c",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListRoles",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778813",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: DescribeInstances",
+    "raw_event": {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:19:00Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "DescribeInstances",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,D,n,Z cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "instancesSet": {},
+        "filterSet": {}
+      },
+      "responseElements": null,
+      "requestID": "19a40532-0985-4558-a797-253c33e161e5",
+      "eventID": "07fbb9d1-5b48-4225-a05e-0af9d9c368ff",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "ec2.us-east-1.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "DescribeInstances",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778831",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: DescribeSecurityGroups",
+    "raw_event": {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:19:00Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "DescribeSecurityGroups",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,D,n,Z cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "securityGroupSet": {},
+        "securityGroupIdSet": {},
+        "filterSet": {}
+      },
+      "responseElements": null,
+      "requestID": "7d196158-c38e-45ee-903d-143a51211b9d",
+      "eventID": "bf64e636-c655-469f-a279-e339fad1f13e",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "ec2.us-east-1.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "DescribeSecurityGroups",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778848",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListUsers",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T22:18:56Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListUsers",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,D,Z cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "maxItems": 1
+      },
+      "responseElements": null,
+      "requestID": "21403b7a-7aea-4720-befb-8e78698609f5",
+      "eventID": "aef3a5ed-c6f2-43fa-a0a0-1abfc7294262",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListUsers",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778862",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListDetectors",
+    "raw_event": {
+      "eventVersion": "1.09",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T21:37:17Z",
+      "eventSource": "guardduty.amazonaws.com",
+      "eventName": "ListDetectors",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/D,Z,b cfg/retry-mode#legacy Botocore/1.40.37",
+      "errorCode": "SubscriptionRequiredException",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "f76a74fc-fda9-4c56-8386-4851b69531d1",
+      "eventID": "0c260536-dba1-4db4-8f50-18a6ad314942",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management"
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListDetectors",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778882",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: LookupEvents",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T21:37:16Z",
+      "eventSource": "cloudtrail.amazonaws.com",
+      "eventName": "LookupEvents",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/D,Z,b cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "startTime": "Sep 23, 2025, 9:37:13 PM",
+        "endTime": "Sep 24, 2025, 9:37:13 PM",
+        "maxResults": 50
+      },
+      "responseElements": null,
+      "requestID": "05e51187-b565-4551-910b-36914c981422",
+      "eventID": "7da36cb4-e257-4d81-8da0-94a6bd79c537",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "cloudtrail.us-east-1.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "LookupEvents",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778900",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListAttachedRolePolicies",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T21:37:14Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListAttachedRolePolicies",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/D,Z,b cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "roleName": "AWSServiceRoleForTrustedAdvisor"
+      },
+      "responseElements": null,
+      "requestID": "4ffa6077-a0c7-4b41-804d-2751e2e36ee7",
+      "eventID": "53f7bca3-26ae-4449-b0ed-a5b47032a3f3",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListAttachedRolePolicies",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778917",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListAttachedRolePolicies",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T21:37:14Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListAttachedRolePolicies",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/D,Z,b cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": {
+        "roleName": "AWSServiceRoleForSupport"
+      },
+      "responseElements": null,
+      "requestID": "b8e8144b-63a2-4a14-bf73-e1042bc6ff3b",
+      "eventID": "6d8ef70b-1fb7-4d6b-a8a2-ae4d5c30d109",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListAttachedRolePolicies",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778936",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: GetAccountSummary",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T21:37:14Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "GetAccountSummary",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/D,Z,b cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "c573fdeb-d744-4577-adc6-d8f9ec282c8c",
+      "eventID": "b651f3bb-2b62-47da-a084-f3ddebd5038d",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "GetAccountSummary",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:31.778952",
+    "source": "AWS_CLOUDTRAIL",
+    "resource_id": "arn:aws:iam::181179258416:root",
+    "event_type": "ROOT_ACCOUNT_USAGE",
+    "severity": "CRITICAL",
+    "description": "Root account used for action: ListUsers",
+    "raw_event": {
+      "eventVersion": "1.11",
+      "userIdentity": {
+        "type": "Root",
+        "principalId": "181179258416",
+        "arn": "arn:aws:iam::181179258416:root",
+        "accountId": "181179258416",
+        "accessKeyId": "AKIASULZACYYA7MYNCZB"
+      },
+      "eventTime": "2025-09-24T21:37:13Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListUsers",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "49.43.24.130",
+      "userAgent": "Boto3/1.40.37 md/Botocore#1.40.37 ua/2.1 os/windows#11 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/D,Z,b cfg/retry-mode#legacy Botocore/1.40.37",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "15b978d6-bb0b-41c4-915d-ebac7fc7ae9d",
+      "eventID": "9382cba3-02bb-4b64-b95a-b5c4d3ae842e",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "181179258416",
+      "eventCategory": "Management",
+      "tlsDetails": {
+        "tlsVersion": "TLSv1.3",
+        "cipherSuite": "TLS_AES_128_GCM_SHA256",
+        "clientProvidedHostHeader": "iam.amazonaws.com"
+      }
+    },
+    "region": "us-east-1",
+    "event": {
+      "action": "ListUsers",
+      "user": "arn:aws:iam::181179258416:root",
+      "user_type": "Root",
+      "mfa": false,
+      "source_ip": "49.43.24.130",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T04:00:34.457204",
+    "source": "AWS_GUARDDUTY",
+    "resource_id": "N/A",
+    "event_type": "COLLECTION_ERROR",
+    "severity": "CRITICAL",
+    "description": "GuardDuty security collection failed: An error occurred (SubscriptionRequiredException) when calling the ListDetectors operation: The AWS Access Key Id needs a subscription for the service",
+    "raw_event": {
+      "error": "An error occurred (SubscriptionRequiredException) when calling the ListDetectors operation: The AWS Access Key Id needs a subscription for the service"
+    },
+    "region": "us-east-1"
+  }
+]

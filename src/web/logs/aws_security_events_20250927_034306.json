@@ -1,0 +1,165 @@
+[
+  {
+    "timestamp": "2025-09-26T22:12:54.508894",
+    "source": "AWS_EC2_SG",
+    "resource_id": "sg-007ac448ce2979195",
+    "event_type": "SECURITY_GROUP_RULE",
+    "severity": "CRITICAL",
+    "description": "Security group 'launch-wizard-1' allows tcp from 0.0.0.0/0 on ports 22-22",
+    "raw_event": {
+      "GroupId": "sg-007ac448ce2979195",
+      "IpPermissionsEgress": [
+        {
+          "IpProtocol": "-1",
+          "UserIdGroupPairs": [],
+          "IpRanges": [
+            {
+              "CidrIp": "0.0.0.0/0"
+            }
+          ],
+          "Ipv6Ranges": [],
+          "PrefixListIds": []
+        }
+      ],
+      "VpcId": "vpc-0516dc055397219cb",
+      "SecurityGroupArn": "arn:aws:ec2:us-east-1:181179258416:security-group/sg-007ac448ce2979195",
+      "OwnerId": "181179258416",
+      "GroupName": "launch-wizard-1",
+      "Description": "launch-wizard-1 created 2025-09-04T17:20:40.344Z",
+      "IpPermissions": [
+        {
+          "IpProtocol": "tcp",
+          "FromPort": 22,
+          "ToPort": 22,
+          "UserIdGroupPairs": [],
+          "IpRanges": [
+            {
+              "CidrIp": "0.0.0.0/0"
+            }
+          ],
+          "Ipv6Ranges": [],
+          "PrefixListIds": []
+        }
+      ]
+    },
+    "region": "us-east-1",
+    "sg": {
+      "name": "launch-wizard-1",
+      "id": "sg-007ac448ce2979195",
+      "protocol": "tcp",
+      "from_port": 22,
+      "to_port": 22,
+      "cidr": "0.0.0.0/0",
+      "rule_string": "tcp/22-22,0.0.0.0/0"
+    }
+  },
+  {
+    "timestamp": "2025-09-26T22:13:00.082977",
+    "source": "AWS_IAM_ACCOUNT",
+    "resource_id": "ACCOUNT",
+    "event_type": "WEAK_PASSWORD_POLICY",
+    "severity": "HIGH",
+    "description": "Account has weak password policy (min length: 0)",
+    "raw_event": {
+      "SummaryMap": {
+        "GroupPolicySizeQuota": 5120,
+        "InstanceProfilesQuota": 1000,
+        "Policies": 0,
+        "GroupsPerUserQuota": 10,
+        "InstanceProfiles": 0,
+        "AttachedPoliciesPerUserQuota": 10,
+        "Users": 0,
+        "PoliciesQuota": 1500,
+        "Providers": 0,
+        "AccountMFAEnabled": 0,
+        "AccessKeysPerUserQuota": 2,
+        "AssumeRolePolicySizeQuota": 2048,
+        "PolicyVersionsInUseQuota": 10000,
+        "GlobalEndpointTokenVersion": 1,
+        "VersionsPerPolicyQuota": 5,
+        "AttachedPoliciesPerGroupQuota": 10,
+        "PolicySizeQuota": 6144,
+        "Groups": 0,
+        "AccountSigningCertificatesPresent": 0,
+        "UsersQuota": 5000,
+        "ServerCertificatesQuota": 20,
+        "MFADevices": 0,
+        "UserPolicySizeQuota": 2048,
+        "PolicyVersionsInUse": 2,
+        "ServerCertificates": 0,
+        "Roles": 2,
+        "RolesQuota": 1000,
+        "SigningCertificatesPerUserQuota": 2,
+        "MFADevicesInUse": 0,
+        "RolePolicySizeQuota": 10240,
+        "AttachedPoliciesPerRoleQuota": 10,
+        "AccountAccessKeysPresent": 1,
+        "AccountPasswordPresent": 1,
+        "GroupsQuota": 300
+      },
+      "ResponseMetadata": {
+        "RequestId": "1257c7dd-c5bd-4fa7-9b0d-c7e4c400e753",
+        "HTTPStatusCode": 200,
+        "HTTPHeaders": {
+          "date": "Fri, 26 Sep 2025 22:13:02 GMT",
+          "x-amzn-requestid": "1257c7dd-c5bd-4fa7-9b0d-c7e4c400e753",
+          "content-type": "text/xml",
+          "content-length": "3482"
+        },
+        "RetryAttempts": 0
+      }
+    },
+    "region": "us-east-1",
+    "account": {
+      "min_password_length": 0,
+      "password_policy": {
+        "GroupPolicySizeQuota": 5120,
+        "InstanceProfilesQuota": 1000,
+        "Policies": 0,
+        "GroupsPerUserQuota": 10,
+        "InstanceProfiles": 0,
+        "AttachedPoliciesPerUserQuota": 10,
+        "Users": 0,
+        "PoliciesQuota": 1500,
+        "Providers": 0,
+        "AccountMFAEnabled": 0,
+        "AccessKeysPerUserQuota": 2,
+        "AssumeRolePolicySizeQuota": 2048,
+        "PolicyVersionsInUseQuota": 10000,
+        "GlobalEndpointTokenVersion": 1,
+        "VersionsPerPolicyQuota": 5,
+        "AttachedPoliciesPerGroupQuota": 10,
+        "PolicySizeQuota": 6144,
+        "Groups": 0,
+        "AccountSigningCertificatesPresent": 0,
+        "UsersQuota": 5000,
+        "ServerCertificatesQuota": 20,
+        "MFADevices": 0,
+        "UserPolicySizeQuota": 2048,
+        "PolicyVersionsInUse": 2,
+        "ServerCertificates": 0,
+        "Roles": 2,
+        "RolesQuota": 1000,
+        "SigningCertificatesPerUserQuota": 2,
+        "MFADevicesInUse": 0,
+        "RolePolicySizeQuota": 10240,
+        "AttachedPoliciesPerRoleQuota": 10,
+        "AccountAccessKeysPresent": 1,
+        "AccountPasswordPresent": 1,
+        "GroupsQuota": 300
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-26T22:13:06.167827",
+    "source": "AWS_GUARDDUTY",
+    "resource_id": "N/A",
+    "event_type": "COLLECTION_ERROR",
+    "severity": "CRITICAL",
+    "description": "GuardDuty security collection failed: An error occurred (SubscriptionRequiredException) when calling the ListDetectors operation: The AWS Access Key Id needs a subscription for the service",
+    "raw_event": {
+      "error": "An error occurred (SubscriptionRequiredException) when calling the ListDetectors operation: The AWS Access Key Id needs a subscription for the service"
+    },
+    "region": "us-east-1"
+  }
+]

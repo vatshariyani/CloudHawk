@@ -158,7 +158,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form id="configForm" onsubmit="saveConfiguration(event)">
+                <form id="configForm">
                     <div class="row g-3">
                         <!-- AWS Configuration -->
                         <div class="col-12">
@@ -195,6 +195,84 @@
                                                {% if config.aws and service in config.aws.services %}checked{% endif %}>
                                         <label class="form-check-label" for="service_{{ service }}">
                                             {{ service.upper() }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Azure Configuration -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-primary">
+                                <i class="fab fa-microsoft"></i> Azure Configuration
+                            </h6>
+                            <hr>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="azure_subscription" class="form-label">Subscription ID</label>
+                            <input type="text" class="form-control" id="azure_subscription" name="azure.subscription_id" 
+                                   value="{{ config.azure.subscription_id if config.azure else '' }}" 
+                                   placeholder="Enter Azure subscription ID">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="azure_max_events" class="form-label">Max Events per Service</label>
+                            <input type="number" class="form-control" id="azure_max_events" name="azure.max_events_per_service" 
+                                   value="{{ config.azure.max_events_per_service if config.azure else 1000 }}" min="100" max="10000">
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Services to Monitor</label>
+                            <div class="row">
+                                {% for service in ['storage', 'vm', 'keyvault', 'security_center', 'activity_log'] %}
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="azure_service_{{ service }}" 
+                                               name="azure.services" value="{{ service }}" 
+                                               {% if config.azure and service in config.azure.services %}checked{% endif %}>
+                                        <label class="form-check-label" for="azure_service_{{ service }}">
+                                            {{ service.replace('_', ' ').title() }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- GCP Configuration -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-primary">
+                                <i class="fab fa-google"></i> Google Cloud Platform Configuration
+                            </h6>
+                            <hr>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="gcp_project" class="form-label">Project ID</label>
+                            <input type="text" class="form-control" id="gcp_project" name="gcp.project_id" 
+                                   value="{{ config.gcp.project_id if config.gcp else '' }}" 
+                                   placeholder="Enter GCP project ID">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="gcp_max_events" class="form-label">Max Events per Service</label>
+                            <input type="number" class="form-control" id="gcp_max_events" name="gcp.max_events_per_service" 
+                                   value="{{ config.gcp.max_events_per_service if config.gcp else 1000 }}" min="100" max="10000">
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Services to Monitor</label>
+                            <div class="row">
+                                {% for service in ['iam', 'storage', 'compute', 'logging', 'security_command_center', 'asset_inventory'] %}
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="gcp_service_{{ service }}" 
+                                               name="gcp.services" value="{{ service }}" 
+                                               {% if config.gcp and service in config.gcp.services %}checked{% endif %}>
+                                        <label class="form-check-label" for="gcp_service_{{ service }}">
+                                            {{ service.replace('_', ' ').title() }}
                                         </label>
                                     </div>
                                 </div>
@@ -325,14 +403,8 @@
                             </div>
                             
                             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                <button type="button" class="btn btn-outline-info me-2" onclick="testEmail()">
-                                    <i class="fas fa-envelope"></i> Test Email
-                                </button>
-                                <button type="button" class="btn btn-outline-warning me-2" onclick="testSave()">
-                                    <i class="fas fa-flask"></i> Enable Email
-                                </button>
-                                <button type="button" class="btn btn-outline-success me-2" onclick="testEmailOnly()">
-                                    <i class="fas fa-paper-plane"></i> Test Email
+                                <button type="button" class="btn btn-outline-success me-2" onclick="enableAlerts()">
+                                    <i class="fas fa-bell"></i> Enable Alerts
                                 </button>
                                 <button type="button" class="btn btn-outline-dark me-2" onclick="debugEmailConfig()">
                                     <i class="fas fa-bug"></i> Debug Email
@@ -340,13 +412,13 @@
                                 <button type="button" class="btn btn-outline-danger me-2" onclick="sendAlertFromConfig()">
                                     <i class="fas fa-exclamation-triangle"></i> Send Alert
                                 </button>
-                                <button type="button" class="btn btn-outline-warning me-2" onclick="clearTestConfig()">
-                                    <i class="fas fa-trash"></i> Clear Test Config
+                                <button type="button" class="btn btn-outline-info me-2" onclick="testFormData()">
+                                    <i class="fas fa-bug"></i> Test Form
                                 </button>
                                 <button type="button" class="btn btn-outline-secondary me-2" onclick="resetConfig()">
                                     <i class="fas fa-undo"></i> Reset
                                 </button>
-                                <button type="submit" class="btn btn-primary">
+                                <button type="button" class="btn btn-primary" onclick="saveConfiguration()">
                                     <i class="fas fa-save"></i> Save Configuration
                                 </button>
                             </div>
@@ -370,6 +442,20 @@
                     <li><i class="fas fa-check text-success"></i> Set your preferred AWS region</li>
                     <li><i class="fas fa-check text-success"></i> Configure max events per service</li>
                     <li><i class="fas fa-check text-success"></i> Select services to monitor</li>
+                </ul>
+                
+                <h6>Azure Configuration:</h6>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-check text-success"></i> Enter your Azure subscription ID</li>
+                    <li><i class="fas fa-check text-success"></i> Configure max events per service</li>
+                    <li><i class="fas fa-check text-success"></i> Select Azure services to monitor</li>
+                </ul>
+                
+                <h6>GCP Configuration:</h6>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-check text-success"></i> Enter your GCP project ID</li>
+                    <li><i class="fas fa-check text-success"></i> Configure max events per service</li>
+                    <li><i class="fas fa-check text-success"></i> Select GCP services to monitor</li>
                 </ul>
                 
                 <h6>Detection Configuration:</h6>
@@ -579,6 +665,29 @@ function resetConfig() {
     }
 }
 
+function enableAlerts() {
+    // Enable email alerts without overwriting existing settings
+    fetch('/api/test-save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('✅ Email alerts enabled successfully!');
+            // Reload page to see changes
+            window.location.reload();
+        } else {
+            alert('❌ Enable alerts failed: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('❌ Error enabling alerts: ' + error.message);
+    });
+}
+
 function testSave() {
     // Enable email alerts without overwriting existing settings
     fetch('/api/test-save', {
@@ -602,30 +711,10 @@ function testSave() {
     });
 }
 
-function testEmailOnly() {
-    // Test email sending without changing configuration
-    fetch('/api/test-email-only', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            alert('✅ Test email sent successfully! Check your inbox.');
-        } else {
-            alert('❌ Test email failed: ' + data.message);
-        }
-    })
-    .catch(error => {
-        alert('❌ Error sending test email: ' + error.message);
-    });
-}
 
 function debugEmailConfig() {
-    // Debug email configuration
-    fetch('/api/debug-email-config', {
+    // Debug email configuration from separate file
+    fetch('/api/debug-email-config-file', {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -634,21 +723,42 @@ function debugEmailConfig() {
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            let message = '📧 Email Configuration Debug:\n\n';
-            message += `Email Enabled: ${data.email_enabled}\n`;
+            let message = '📧 Alerting Configuration Debug:\n\n';
             message += `Alerting Enabled: ${data.alerting_enabled}\n`;
-            message += `All Required Fields Present: ${data.all_required_present}\n\n`;
+            message += `Email Enabled: ${data.email_enabled}\n`;
+            message += `Slack Enabled: ${data.slack_enabled}\n\n`;
             
-            if (data.missing_fields.length > 0) {
-                message += `❌ Missing Fields: ${data.missing_fields.join(', ')}\n\n`;
+            // Email fields
+            message += `📧 EMAIL CONFIGURATION:\n`;
+            message += `All Required Fields Present: ${data.email_all_required_present}\n`;
+            
+            if (data.email_missing_fields && data.email_missing_fields.length > 0) {
+                message += `❌ Missing Email Fields: ${data.email_missing_fields.join(', ')}\n`;
             }
             
-            if (Object.keys(data.present_fields).length > 0) {
-                message += `✅ Present Fields:\n`;
-                for (const [field, value] of Object.entries(data.present_fields)) {
-                    message += `  ${field}: ${value}\n`;
+            if (data.email_present_fields && Object.keys(data.email_present_fields).length > 0) {
+                message += `✅ Present Email Fields:\n`;
+                for (const [key, value] of Object.entries(data.email_present_fields)) {
+                    message += `  ${key}: ${value}\n`;
                 }
             }
+            
+            // Slack fields
+            message += `\n💬 SLACK CONFIGURATION:\n`;
+            message += `All Required Fields Present: ${data.slack_all_required_present}\n`;
+            
+            if (data.slack_missing_fields && data.slack_missing_fields.length > 0) {
+                message += `❌ Missing Slack Fields: ${data.slack_missing_fields.join(', ')}\n`;
+            }
+            
+            if (data.slack_present_fields && Object.keys(data.slack_present_fields).length > 0) {
+                message += `✅ Present Slack Fields:\n`;
+                for (const [key, value] of Object.entries(data.slack_present_fields)) {
+                    message += `  ${key}: ${value}\n`;
+                }
+            }
+            
+            message += `\nLast Updated: ${data.last_updated}`;
             
             alert(message);
         } else {
@@ -661,13 +771,13 @@ function debugEmailConfig() {
 }
 
 function sendAlertFromConfig() {
-    // Send alert using current configuration
-    fetch('/api/send-alerts', {
+    // Send alert using email config file
+    fetch('/api/send-alert-from-config', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ type: 'email' })
+        body: JSON.stringify({ test_alert: true })
     })
     .then(response => response.json())
     .then(data => {
@@ -687,47 +797,83 @@ function sendAlertFromConfig() {
     });
 }
 
-function clearTestConfig() {
-    // Clear test configuration and reset to empty values
-    if (confirm('Are you sure you want to clear the test configuration? This will remove all email settings.')) {
-        fetch('/api/clear-test-config', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                alert('✅ Test configuration cleared! Please configure your real email settings.');
-                window.location.reload();
-            } else {
-                alert('❌ Failed to clear test config: ' + data.message);
-            }
-        })
-        .catch(error => {
-            alert('❌ Error clearing test config: ' + error.message);
-        });
-    }
-}
 
-function saveConfiguration(event) {
-    // Prevent default form submission
-    event.preventDefault();
-    
-    // Collect all form data
-    const formData = new FormData(event.target);
+function testFormData() {
+    // Test form data collection without saving
+    const form = document.getElementById('configForm');
+    const formData = new FormData(form);
     const configData = {};
     
-    // Convert FormData to object
+    // Collect form data
     for (let [key, value] of formData.entries()) {
         configData[key] = value;
     }
     
+    // Also collect via direct access
+    const allInputs = form.querySelectorAll('input, select, textarea');
+    allInputs.forEach(input => {
+        if (input.name) {
+            if (input.type === 'checkbox') {
+                configData[input.name] = input.checked;
+            } else {
+                configData[input.name] = input.value;
+            }
+        }
+    });
+    
+    console.log('=== FORM DATA TEST ===');
+    console.log('FormData entries:', Array.from(formData.entries()));
+    console.log('Collected config:', configData);
+    console.log('Email fields check:');
+    console.log('  smtp_server:', document.getElementById('smtp_server').value);
+    console.log('  username:', document.getElementById('email_username').value);
+    console.log('  password:', document.getElementById('email_password').value);
+    console.log('  from_email:', document.getElementById('from_email').value);
+    console.log('  to_email:', document.getElementById('to_email').value);
+    console.log('  email_enabled:', document.getElementById('email_enabled').checked);
+    
+    alert('Form data test completed! Check console for details.');
+}
+
+function saveConfiguration() {
+    // Get the form element
+    const form = document.getElementById('configForm');
+    
+    // Collect all form data using multiple methods
+    const formData = new FormData(form);
+    const configData = {};
+    
+    // Method 1: FormData
+    for (let [key, value] of formData.entries()) {
+        configData[key] = value;
+    }
+    
+    // Method 2: Direct element access (backup)
+    const allInputs = form.querySelectorAll('input, select, textarea');
+    allInputs.forEach(input => {
+        if (input.name) {
+            if (input.type === 'checkbox') {
+                configData[input.name] = input.checked;
+            } else {
+                configData[input.name] = input.value;
+            }
+        }
+    });
+    
     console.log('Saving configuration:', configData);
+    console.log('Form elements:', form.elements);
+    
+    // Debug: Check specific email fields
+    console.log('Email fields:');
+    console.log('  smtp_server:', document.getElementById('smtp_server').value);
+    console.log('  username:', document.getElementById('email_username').value);
+    console.log('  password:', document.getElementById('email_password').value);
+    console.log('  from_email:', document.getElementById('from_email').value);
+    console.log('  to_email:', document.getElementById('to_email').value);
+    console.log('  email_enabled:', document.getElementById('email_enabled').checked);
     
     // Send to backend
-    fetch('/api/config', {
+    fetch('/api/save-email-config', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -737,67 +883,18 @@ function saveConfiguration(event) {
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            alert('✅ Configuration saved successfully!');
+            alert('✅ Email configuration saved successfully!');
             // Reload page to show updated configuration
             window.location.reload();
         } else {
-            alert('❌ Failed to save configuration: ' + data.message);
+            alert('❌ Failed to save email configuration: ' + data.message);
         }
     })
     .catch(error => {
-        alert('❌ Error saving configuration: ' + error.message);
+        alert('❌ Error saving email configuration: ' + error.message);
     });
 }
 
-function testEmail() {
-    // Collect email configuration from form
-    const emailConfig = {
-        enabled: true,
-        smtp_server: document.getElementById('smtp_server').value,
-        smtp_port: parseInt(document.getElementById('smtp_port').value) || 587,
-        username: document.getElementById('email_username').value,
-        password: document.getElementById('email_password').value,
-        from_email: document.getElementById('from_email').value,
-        to_email: document.getElementById('to_email').value
-    };
-    
-    // Validate required fields
-    if (!emailConfig.smtp_server || !emailConfig.username || !emailConfig.password || !emailConfig.from_email || !emailConfig.to_email) {
-        alert('Please fill in all required email fields (SMTP Server, Username, Password, From Email, To Email) before testing.');
-        return;
-    }
-    
-    // Show loading state
-    const testButton = document.querySelector('button[onclick="testEmail()"]');
-    const originalText = testButton.innerHTML;
-    testButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
-    testButton.disabled = true;
-    
-    // Send test email request
-    fetch('/api/test-email', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(emailConfig)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            alert('✅ Test email sent successfully! Check your inbox.');
-        } else {
-            alert('❌ Email test failed: ' + data.message);
-        }
-    })
-    .catch(error => {
-        alert('❌ Email test failed: ' + error.message);
-    })
-    .finally(() => {
-        // Restore button state
-        testButton.innerHTML = originalText;
-        testButton.disabled = false;
-    });
-}
 
 function setupGmail() {
     document.getElementById('smtp_server').value = 'smtp.gmail.com';
@@ -893,12 +990,34 @@ function importConfig() {
 function updateFormFields(config) {
     // Update form fields based on imported config
     // This is a simplified version - you might want to implement more comprehensive field mapping
+    
+    // AWS Configuration
     if (config && config.aws) {
         if (config.aws.default_region) {
             document.getElementById('aws_region').value = config.aws.default_region;
         }
         if (config.aws.max_events_per_service) {
             document.getElementById('max_events').value = config.aws.max_events_per_service;
+        }
+    }
+    
+    // Azure Configuration
+    if (config && config.azure) {
+        if (config.azure.subscription_id) {
+            document.getElementById('azure_subscription').value = config.azure.subscription_id;
+        }
+        if (config.azure.max_events_per_service) {
+            document.getElementById('azure_max_events').value = config.azure.max_events_per_service;
+        }
+    }
+    
+    // GCP Configuration
+    if (config && config.gcp) {
+        if (config.gcp.project_id) {
+            document.getElementById('gcp_project').value = config.gcp.project_id;
+        }
+        if (config.gcp.max_events_per_service) {
+            document.getElementById('gcp_max_events').value = config.gcp.max_events_per_service;
         }
     }
     

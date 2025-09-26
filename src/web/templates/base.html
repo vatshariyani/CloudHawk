@@ -318,16 +318,32 @@
                 </ul>
                 
                 <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="cloudProviderDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-cloud"></i> <span id="selected-provider">AWS</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="cloudProviderDropdown">
+                            <li><a class="dropdown-item" href="#" onclick="selectProvider('AWS')">
+                                <i class="fab fa-aws"></i> AWS
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="selectProvider('Azure')">
+                                <i class="fab fa-microsoft"></i> Azure
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="selectProvider('GCP')">
+                                <i class="fab fa-google"></i> Google Cloud
+                            </a></li>
+                        </ul>
+                    </li>
                     <li class="nav-item">
                         <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
                             <i class="fas fa-moon" id="theme-icon"></i>
                         </button>
                     </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('health_page') }}">
-                                <i class="fas fa-heartbeat"></i> Health
-                            </a>
-                        </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('health_page') }}">
+                            <i class="fas fa-heartbeat"></i> Health
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -397,6 +413,52 @@
             }
         }
 
+        // Cloud provider management
+        function initProvider() {
+            try {
+                const savedProvider = localStorage.getItem('cloudProvider') || 'AWS';
+                setProvider(savedProvider);
+            } catch (e) {
+                setProvider('AWS');
+            }
+        }
+
+        function setProvider(provider) {
+            try {
+                const selectedProviderElement = document.getElementById('selected-provider');
+                if (selectedProviderElement) {
+                    selectedProviderElement.textContent = provider;
+                }
+                localStorage.setItem('cloudProvider', provider);
+                
+                // Dispatch custom event for provider change
+                const event = new CustomEvent('providerChanged', { detail: { provider } });
+                document.dispatchEvent(event);
+                
+                // Update page content based on provider
+                updateProviderContent(provider);
+            } catch (e) {
+                console.warn('Provider setting failed:', e);
+            }
+        }
+
+        function selectProvider(provider) {
+            setProvider(provider);
+        }
+
+        function updateProviderContent(provider) {
+            // Update any provider-specific content on the page
+            const providerElements = document.querySelectorAll('[data-provider]');
+            providerElements.forEach(element => {
+                const elementProvider = element.getAttribute('data-provider');
+                if (elementProvider === provider) {
+                    element.style.display = 'block';
+                } else {
+                    element.style.display = 'none';
+                }
+            });
+        }
+
         // Auto-refresh alerts every 30 seconds
         function refreshAlerts() {
             try {
@@ -433,15 +495,17 @@
             }
         }
         
-        // Initialize theme on page load
+        // Initialize theme and provider on page load
         try {
             document.addEventListener('DOMContentLoaded', function() {
                 initTheme();
+                initProvider();
             });
             
             // Also try to initialize immediately if DOM is already loaded
             if (document.readyState !== 'loading') {
                 initTheme();
+                initProvider();
             }
             
             // Start auto-refresh

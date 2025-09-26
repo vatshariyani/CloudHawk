@@ -23,13 +23,18 @@ from .anomaly_detector import AnomalyDetector
 from .health_scorer import HealthScorer
 from .misconfig_scanner import MisconfigScanner
 from .vulnerability_scanner import VulnerabilityScanner
+from .multi_cloud_rules_engine import MultiCloudRulesEngine
+from .multi_cloud_logging import MultiCloudLogger
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class DetectionEngine:
-    """Main detection engine that orchestrates all detection capabilities"""
+    """
+    Multi-cloud detection engine for AWS, Azure, and GCP security analysis.
+    Main detection engine that orchestrates all detection capabilities.
+    """
     
     def __init__(self, config: Dict = None):
         """Initialize the detection engine"""
@@ -59,6 +64,13 @@ class DetectionEngine:
         self.vulnerability_scanner = VulnerabilityScanner(
             config=self.config.get('vulnerability_scanning', {})
         )
+        
+        # Initialize multi-cloud modules
+        self.multi_cloud_rules_engine = MultiCloudRulesEngine(
+            rules_file=os.path.join(self.base_dir, 'detection', 'security_rules.yaml'),
+            config=self.config.get('multi_cloud_rules', {})
+        )
+        self.multi_cloud_logger = MultiCloudLogger(self.config.get('logging', {}))
         
         # Results storage
         self.results = {
@@ -134,6 +146,71 @@ class DetectionEngine:
         self.results['summary'] = self._generate_comprehensive_summary()
         
         logger.info("Comprehensive security scan completed")
+        return self.results
+    
+    def run_multi_cloud_comprehensive_scan(self, events_file: str, resource_configs: Dict = None) -> Dict:
+        """Run comprehensive multi-cloud security scan with cross-cloud correlation"""
+        logger.info("Starting multi-cloud comprehensive security scan")
+        
+        # Load events
+        events = self._load_events(events_file)
+        if not events:
+            logger.warning("No events found for multi-cloud scan")
+            return self.results
+        
+        # Log scan start
+        self.multi_cloud_logger.log_detection_start("multi_cloud_comprehensive", len(events))
+        
+        # 1. Multi-cloud rule evaluation
+        logger.info("Running multi-cloud rule evaluation...")
+        try:
+            multi_cloud_alerts = self.multi_cloud_rules_engine.evaluate_events(events)
+            self.results['multi_cloud_alerts'] = multi_cloud_alerts
+            self.multi_cloud_logger.log_detection_complete("multi_cloud_rules", len(multi_cloud_alerts), 0)
+        except Exception as e:
+            logger.error(f"Multi-cloud rule evaluation failed: {e}")
+            self.results['multi_cloud_alerts'] = []
+        
+        # 2. Cross-cloud anomaly detection
+        logger.info("Running cross-cloud anomaly detection...")
+        try:
+            cross_cloud_anomalies = self._detect_cross_cloud_anomalies(events)
+            self.results['cross_cloud_anomalies'] = cross_cloud_anomalies
+        except Exception as e:
+            logger.error(f"Cross-cloud anomaly detection failed: {e}")
+            self.results['cross_cloud_anomalies'] = []
+        
+        # 3. Multi-cloud health scoring
+        logger.info("Running multi-cloud health scoring...")
+        try:
+            multi_cloud_health = self._calculate_multi_cloud_health_score(events)
+            self.results['multi_cloud_health'] = multi_cloud_health
+        except Exception as e:
+            logger.error(f"Multi-cloud health scoring failed: {e}")
+            self.results['multi_cloud_health'] = {}
+        
+        # 4. Cross-cloud correlation analysis
+        logger.info("Running cross-cloud correlation analysis...")
+        try:
+            correlations = self._analyze_cross_cloud_correlations(events)
+            self.results['cross_cloud_correlations'] = correlations
+        except Exception as e:
+            logger.error(f"Cross-cloud correlation analysis failed: {e}")
+            self.results['cross_cloud_correlations'] = []
+        
+        # 5. Multi-cloud vulnerability assessment
+        logger.info("Running multi-cloud vulnerability assessment...")
+        try:
+            multi_cloud_vulnerabilities = self._assess_multi_cloud_vulnerabilities(events)
+            self.results['multi_cloud_vulnerabilities'] = multi_cloud_vulnerabilities
+        except Exception as e:
+            logger.error(f"Multi-cloud vulnerability assessment failed: {e}")
+            self.results['multi_cloud_vulnerabilities'] = {}
+        
+        # Generate multi-cloud summary
+        self.results['multi_cloud_summary'] = self._generate_multi_cloud_summary()
+        
+        logger.info("Multi-cloud comprehensive security scan completed")
         return self.results
     
     def run_rule_based_detection(self, events_file: str) -> List[Dict]:

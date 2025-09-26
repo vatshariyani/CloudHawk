@@ -349,35 +349,193 @@ python -m pytest --cov=src tests/
 
 ## 🐳 Docker Support
 
-### Build and Run with Docker
+CloudHawk is fully containerized with production-ready Docker configuration supporting multi-cloud security monitoring.
 
+### 🏗️ **Docker Architecture**
+
+The Dockerfile uses a **multi-stage build** for optimized production containers:
+
+- **Multi-stage build**: Separate build and runtime environments for smaller images
+- **Security-focused**: Non-root user execution with proper permissions
+- **Production-ready**: Health checks, proper environment variables, and optimized layers
+- **Multi-cloud support**: Container can access AWS, Azure, and GCP APIs
+
+### 🚀 **Quick Start with Docker**
+
+#### **Option 1: Docker Compose (Recommended)**
+```bash
+# Clone and start CloudHawk
+git clone https://github.com/your-org/cloudhawk.git
+cd cloudhawk
+docker-compose up -d
+
+# Access the web dashboard at http://localhost:5000
+```
+
+#### **Option 2: Manual Docker Build**
 ```bash
 # Build the image
 docker build -t cloudhawk .
 
 # Run with configuration
-docker run -v $(pwd)/config.yaml:/app/config.yaml cloudhawk
+docker run -d \
+  --name cloudhawk \
+  -p 5000:5000 \
+  -v $(pwd)/config.yaml:/app/config.yaml:ro \
+  -v $(pwd)/logs:/app/logs \
+  -v ~/.aws:/home/cloudhawk/.aws:ro \
+  -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
+  -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
+  cloudhawk
+```
 
-# Run with AWS credentials
+### 🔧 **Docker Compose Services**
+
+The `docker-compose.yml` includes:
+
+#### **Main CloudHawk Service**
+- **Web Dashboard**: Flask application on port 5000
+- **Multi-Cloud Collectors**: AWS, Azure, GCP data collection
+- **Security Detection**: Vulnerability scanning, anomaly detection, misconfiguration scanning
+- **Volume Mounts**: Configuration, logs, and AWS credentials
+- **Health Monitoring**: Automatic health checks and restarts
+
+#### **Optional Services** (Future Enhancements)
+- **Redis** (port 6379): Caching layer for improved performance
+- **PostgreSQL** (port 5432): Persistent storage for historical data
+
+### 📊 **Container Features**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    CloudHawk Container                      │
+├─────────────────────────────────────────────────────────────┤
+│  Web Dashboard (Flask) - Port 5000                         │
+│  ├── AWS Collector                                         │
+│  ├── Azure Collector                                      │
+│  ├── GCP Collector                                        │
+│  ├── Detection Engine                                     │
+│  ├── Vulnerability Scanner                               │
+│  ├── Anomaly Detector                                    │
+│  ├── Misconfiguration Scanner                            │
+│  └── Health Scorer                                       │
+├─────────────────────────────────────────────────────────────┤
+│  Volume Mounts:                                           │
+│  ├── ./config.yaml → /app/config.yaml (ro)               │
+│  ├── ./logs → /app/logs                                   │
+│  └── ~/.aws → /home/cloudhawk/.aws (ro)                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 🔍 **Health Monitoring**
+
+The container includes built-in health checks:
+```dockerfile
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5000/health || exit 1
+```
+
+Monitor container health:
+```bash
+# Check container status
+docker ps
+
+# View health status
+docker inspect cloudhawk | grep -A 10 "Health"
+
+# View logs
+docker logs cloudhawk
+```
+
+### 🌐 **Multi-Cloud Configuration**
+
+#### **AWS Configuration**
+```bash
+# Mount AWS credentials
+docker run -v ~/.aws:/home/cloudhawk/.aws:ro cloudhawk
+
+# Or use environment variables
 docker run -e AWS_ACCESS_KEY_ID=xxx -e AWS_SECRET_ACCESS_KEY=xxx cloudhawk
 ```
 
-### Docker Compose
-
-```yaml
-version: '3.8'
-services:
-  cloudhawk:
-    build: .
-    volumes:
-      - ./config.yaml:/app/config.yaml
-      - ./logs:/app/logs
-    environment:
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-    ports:
-      - "5000:5000"
+#### **Azure Configuration**
+```bash
+# Azure credentials via environment variables
+docker run -e AZURE_SUBSCRIPTION_ID=xxx -e AZURE_TENANT_ID=xxx cloudhawk
 ```
+
+#### **GCP Configuration**
+```bash
+# GCP credentials via environment variables
+docker run -e GOOGLE_CLOUD_PROJECT=xxx cloudhawk
+```
+
+### 🛠️ **Development with Docker**
+
+```bash
+# Development with live reload
+docker-compose -f docker-compose.dev.yml up
+
+# Run tests in container
+docker run --rm cloudhawk python -m pytest
+
+# Access container shell
+docker exec -it cloudhawk bash
+```
+
+### 📈 **Production Deployment**
+
+#### **Kubernetes Deployment**
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudhawk
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: cloudhawk
+  template:
+    metadata:
+      labels:
+        app: cloudhawk
+    spec:
+      containers:
+      - name: cloudhawk
+        image: cloudhawk:latest
+        ports:
+        - containerPort: 5000
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: access-key-id
+```
+
+#### **Docker Swarm**
+```bash
+# Deploy to Docker Swarm
+docker stack deploy -c docker-compose.yml cloudhawk
+```
+
+### 🔒 **Security Features**
+
+- **Non-root execution**: Container runs as `cloudhawk` user
+- **Read-only configuration**: Config files mounted as read-only
+- **Credential isolation**: Cloud credentials mounted securely
+- **Health monitoring**: Automatic restart on failure
+- **Resource limits**: Configurable CPU and memory limits
+
+### 🎯 **Use Cases**
+
+- **Production deployments** in cloud environments
+- **Development environments** for team collaboration
+- **CI/CD pipelines** for automated testing
+- **Multi-tenant deployments** with isolated instances
+- **Hybrid cloud monitoring** from containerized environments
+- **Kubernetes deployments** (container-ready)
 
 ## 📈 Performance
 

@@ -60,12 +60,11 @@
                 <form method="POST">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label for="region" class="form-label">AWS Region</label>
-                            <select class="form-select" id="region" name="region" required>
-                                <option value="us-east-1" {% if config.aws.default_region == 'us-east-1' %}selected{% endif %}>US East (N. Virginia)</option>
-                                <option value="us-west-2" {% if config.aws.default_region == 'us-west-2' %}selected{% endif %}>US West (Oregon)</option>
-                                <option value="eu-west-1" {% if config.aws.default_region == 'eu-west-1' %}selected{% endif %}>Europe (Ireland)</option>
-                                <option value="ap-southeast-1" {% if config.aws.default_region == 'ap-southeast-1' %}selected{% endif %}>Asia Pacific (Singapore)</option>
+                            <label for="provider" class="form-label">Cloud Provider</label>
+                            <select class="form-select" id="provider" name="provider" onchange="updateProviderFields()" required>
+                                <option value="AWS">AWS</option>
+                                <option value="Azure">Azure</option>
+                                <option value="GCP">Google Cloud Platform</option>
                             </select>
                         </div>
                         
@@ -73,24 +72,84 @@
                             <label for="max_events" class="form-label">Max Events per Service</label>
                             <input type="number" class="form-control" id="max_events" name="max_events" 
                                    value="{{ config.aws.max_events_per_service }}" min="100" max="10000" required>
-                            <div class="form-text">Maximum number of events to collect per AWS service</div>
+                            <div class="form-text">Maximum number of events to collect per service</div>
+                        </div>
+                        
+                        <!-- AWS-specific fields -->
+                        <div class="col-md-6" id="aws-region-field" data-provider="AWS">
+                            <label for="region" class="form-label">AWS Region</label>
+                            <select class="form-select" id="region" name="region">
+                                <option value="us-east-1" {% if config.aws.default_region == 'us-east-1' %}selected{% endif %}>US East (N. Virginia)</option>
+                                <option value="us-west-2" {% if config.aws.default_region == 'us-west-2' %}selected{% endif %}>US West (Oregon)</option>
+                                <option value="eu-west-1" {% if config.aws.default_region == 'eu-west-1' %}selected{% endif %}>Europe (Ireland)</option>
+                                <option value="ap-southeast-1" {% if config.aws.default_region == 'ap-southeast-1' %}selected{% endif %}>Asia Pacific (Singapore)</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Azure-specific fields -->
+                        <div class="col-md-6" id="azure-subscription-field" data-provider="Azure" style="display: none;">
+                            <label for="subscription_id" class="form-label">Azure Subscription ID</label>
+                            <input type="text" class="form-control" id="subscription_id" name="subscription_id" 
+                                   placeholder="Enter Azure subscription ID">
+                            <div class="form-text">Your Azure subscription ID</div>
+                        </div>
+                        
+                        <!-- GCP-specific fields -->
+                        <div class="col-md-6" id="gcp-project-field" data-provider="GCP" style="display: none;">
+                            <label for="project_id" class="form-label">GCP Project ID</label>
+                            <input type="text" class="form-control" id="project_id" name="project_id" 
+                                   placeholder="Enter GCP project ID">
+                            <div class="form-text">Your Google Cloud project ID</div>
                         </div>
                         
                         <div class="col-12">
                             <label class="form-label">Services to Scan</label>
                             <div class="row">
-                                {% for service in ['ec2', 's3', 'iam', 'cloudtrail', 'guardduty'] %}
-                                <div class="col-md-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="service_{{ service }}" 
-                                               name="services" value="{{ service }}" 
-                                               {% if service in config.aws.services %}checked{% endif %}>
-                                        <label class="form-check-label" for="service_{{ service }}">
-                                            {{ service.upper() }}
-                                        </label>
+                                <!-- AWS Services -->
+                                <div id="aws-services" data-provider="AWS">
+                                    {% for service in ['ec2', 's3', 'iam', 'cloudtrail', 'guardduty'] %}
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="service_{{ service }}" 
+                                                   name="services" value="{{ service }}" 
+                                                   {% if service in config.aws.services %}checked{% endif %}>
+                                            <label class="form-check-label" for="service_{{ service }}">
+                                                {{ service.upper() }}
+                                            </label>
+                                        </div>
                                     </div>
+                                    {% endfor %}
                                 </div>
-                                {% endfor %}
+                                
+                                <!-- Azure Services -->
+                                <div id="azure-services" data-provider="Azure" style="display: none;">
+                                    {% for service in ['storage', 'vm', 'keyvault', 'security_center', 'activity_log'] %}
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="service_{{ service }}" 
+                                                   name="services" value="{{ service }}" checked>
+                                            <label class="form-check-label" for="service_{{ service }}">
+                                                {{ service.replace('_', ' ').title() }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <!-- GCP Services -->
+                                <div id="gcp-services" data-provider="GCP" style="display: none;">
+                                    {% for service in ['iam', 'storage', 'compute', 'logging', 'security_command_center', 'asset_inventory'] %}
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="service_{{ service }}" 
+                                                   name="services" value="{{ service }}" checked>
+                                            <label class="form-check-label" for="service_{{ service }}">
+                                                {{ service.replace('_', ' ').title() }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
                             </div>
                         </div>
                         
@@ -120,7 +179,7 @@
                     <i class="fas fa-info-circle"></i> Scan Information
                 </h5>
             </div>
-            <div class="card-body">
+            <div class="card-body" id="scan-info">
                 <h6>What will be scanned:</h6>
                 <ul class="list-unstyled">
                     <li><i class="fas fa-check text-success"></i> EC2 Security Groups</li>
@@ -141,7 +200,7 @@
                 
                 <div class="alert alert-info">
                     <i class="fas fa-lightbulb"></i>
-                    <strong>Tip:</strong> Ensure your AWS credentials have the necessary permissions to read security-related resources.
+                    <strong>Tip:</strong> Ensure your cloud provider credentials have the necessary permissions to read security-related resources.
                 </div>
             </div>
         </div>
@@ -215,6 +274,94 @@
 
 {% block scripts %}
 <script>
+// Function to update provider-specific fields
+function updateProviderFields() {
+    const provider = document.getElementById('provider').value;
+    
+    // Hide all provider-specific fields
+    document.querySelectorAll('[data-provider]').forEach(element => {
+        element.style.display = 'none';
+    });
+    
+    // Show fields for selected provider
+    document.querySelectorAll(`[data-provider="${provider}"]`).forEach(element => {
+        element.style.display = 'block';
+    });
+    
+    // Update scan information based on provider
+    updateScanInformation(provider);
+}
+
+// Function to update scan information based on provider
+function updateScanInformation(provider) {
+    const scanInfo = document.getElementById('scan-info');
+    if (!scanInfo) return;
+    
+    let content = '';
+    if (provider === 'AWS') {
+        content = `
+            <h6>What will be scanned:</h6>
+            <ul class="list-unstyled">
+                <li><i class="fas fa-check text-success"></i> EC2 Security Groups</li>
+                <li><i class="fas fa-check text-success"></i> S3 Bucket Policies</li>
+                <li><i class="fas fa-check text-success"></i> IAM Users & Roles</li>
+                <li><i class="fas fa-check text-success"></i> CloudTrail Events</li>
+                <li><i class="fas fa-check text-success"></i> GuardDuty Findings</li>
+            </ul>
+            <hr>
+            <h6>Prerequisites:</h6>
+            <ul class="list-unstyled">
+                <li><i class="fas fa-key text-warning"></i> AWS Credentials configured</li>
+                <li><i class="fas fa-shield-alt text-warning"></i> Appropriate IAM permissions</li>
+                <li><i class="fas fa-globe text-warning"></i> Network access to AWS APIs</li>
+            </ul>
+        `;
+    } else if (provider === 'Azure') {
+        content = `
+            <h6>What will be scanned:</h6>
+            <ul class="list-unstyled">
+                <li><i class="fas fa-check text-success"></i> Storage Accounts</li>
+                <li><i class="fas fa-check text-success"></i> Virtual Machines</li>
+                <li><i class="fas fa-check text-success"></i> Key Vault</li>
+                <li><i class="fas fa-check text-success"></i> Security Center</li>
+                <li><i class="fas fa-check text-success"></i> Activity Log</li>
+            </ul>
+            <hr>
+            <h6>Prerequisites:</h6>
+            <ul class="list-unstyled">
+                <li><i class="fas fa-key text-warning"></i> Azure credentials configured</li>
+                <li><i class="fas fa-shield-alt text-warning"></i> Appropriate RBAC permissions</li>
+                <li><i class="fas fa-globe text-warning"></i> Network access to Azure APIs</li>
+            </ul>
+        `;
+    } else if (provider === 'GCP') {
+        content = `
+            <h6>What will be scanned:</h6>
+            <ul class="list-unstyled">
+                <li><i class="fas fa-check text-success"></i> IAM Policies</li>
+                <li><i class="fas fa-check text-success"></i> Cloud Storage</li>
+                <li><i class="fas fa-check text-success"></i> Compute Engine</li>
+                <li><i class="fas fa-check text-success"></i> Cloud Logging</li>
+                <li><i class="fas fa-check text-success"></i> Security Command Center</li>
+            </ul>
+            <hr>
+            <h6>Prerequisites:</h6>
+            <ul class="list-unstyled">
+                <li><i class="fas fa-key text-warning"></i> GCP credentials configured</li>
+                <li><i class="fas fa-shield-alt text-warning"></i> Appropriate IAM permissions</li>
+                <li><i class="fas fa-globe text-warning"></i> Network access to GCP APIs</li>
+            </ul>
+        `;
+    }
+    
+    scanInfo.innerHTML = content;
+}
+
+// Initialize provider fields on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateProviderFields();
+});
+
 // Function to send alerts
 function sendAlerts(type) {
     const button = event.target;

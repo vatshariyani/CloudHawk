@@ -32,6 +32,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from detection.rule_engine import RuleEngine
 from collector.aws_collector import AWSCollector
+from collector.azure_collector import AzureCollector
+from collector.gcp_collector import GCPCollector
 
 app = Flask(__name__)
 app.secret_key = 'cloudhawk-secret-key-change-in-production'
@@ -69,6 +71,16 @@ class CloudHawkDashboard:
                 'default_region': 'us-east-1',
                 'max_events_per_service': 1000,
                 'services': ['ec2', 's3', 'iam', 'cloudtrail', 'guardduty']
+            },
+            'azure': {
+                'subscription_id': '',
+                'max_events_per_service': 1000,
+                'services': ['storage', 'vm', 'keyvault', 'security_center', 'activity_log']
+            },
+            'gcp': {
+                'project_id': '',
+                'max_events_per_service': 1000,
+                'services': ['iam', 'storage', 'compute', 'logging', 'security_command_center', 'asset_inventory']
             },
             'detection': {
                 'rule_engine': {
@@ -172,56 +184,6 @@ class CloudHawkDashboard:
 dashboard = CloudHawkDashboard()
 dashboard.initialize_modification_times()
 
-def test_email_configuration(email_config):
-    """Test email configuration"""
-    try:
-        import smtplib
-        from email.mime.text import MIMEText
-        from email.mime.multipart import MIMEMultipart
-        
-        smtp_server = email_config.get('smtp_server', '')
-        smtp_port = email_config.get('smtp_port', 587)
-        username = email_config.get('username', '')
-        password = email_config.get('password', '')
-        from_email = email_config.get('from_email', '')
-        to_email = email_config.get('to_email', '')
-        
-        if not all([smtp_server, username, password, from_email, to_email]):
-            return {'status': 'error', 'message': 'Missing required email configuration'}
-        
-        # Create test message
-        msg = MIMEMultipart()
-        msg['From'] = from_email
-        msg['To'] = to_email
-        msg['Subject'] = 'CloudHawk Email Configuration Test'
-        
-        body = """
-        This is a test email from CloudHawk to verify your email configuration.
-        
-        If you receive this email, your email settings are working correctly.
-        
-        CloudHawk Security Monitoring System
-        """
-        
-        msg.attach(MIMEText(body, 'plain'))
-        
-        # Connect to SMTP server and send email
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
-        server.login(username, password)
-        server.send_message(msg)
-        server.quit()
-        
-        return {'status': 'success', 'message': 'Test email sent successfully'}
-        
-    except smtplib.SMTPAuthenticationError as e:
-        return {'status': 'error', 'message': f'Authentication failed: {str(e)}. For Gmail, use an App Password, not your regular password.'}
-    except smtplib.SMTPConnectError as e:
-        return {'status': 'error', 'message': f'Connection failed: {str(e)}. Check your SMTP server and port settings.'}
-    except smtplib.SMTPException as e:
-        return {'status': 'error', 'message': f'SMTP Error: {str(e)}'}
-    except Exception as e:
-        return {'status': 'error', 'message': f'Email test failed: {str(e)}'}
 
 def send_email_alert(alert, email_config):
     """Send email alert"""
@@ -299,6 +261,98 @@ def send_email_alert(alert, email_config):
         return False
     except Exception as e:
         logger.error(f"Failed to send email alert: {e}")
+        return False
+
+def send_consolidated_email_alert(service, alerts, email_config):
+    """Send consolidated email alert for a service with multiple alerts"""
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+        
+        if not email_config.get('enabled', False):
+            return False
+        
+        smtp_server = email_config.get('smtp_server', '')
+        smtp_port = email_config.get('smtp_port', 587)
+        username = email_config.get('username', '')
+        password = email_config.get('password', '')
+        from_email = email_config.get('from_email', '')
+        to_email = email_config.get('to_email', '')
+        
+        if not all([smtp_server, username, password, from_email, to_email]):
+            logger.error("Missing required email configuration fields for consolidated alert")
+            return False
+        
+        # Count alerts by severity
+        severity_counts = {}
+        for alert in alerts:
+            severity = alert.get('severity', 'Unknown')
+            severity_counts[severity] = severity_counts.get(severity, 0) + 1
+        
+        # Create severity summary
+        severity_summary = []
+        for severity, count in severity_counts.items():
+            severity_summary.append(f"{severity}: {count}")
+        
+        # Create message
+        msg = MIMEMultipart()
+        msg['From'] = from_email
+        msg['To'] = to_email
+        msg['Subject'] = f"CloudHawk Security Alert: {service} Service ({len(alerts)} alerts)"
+        
+        # Create consolidated email body
+        body = f"""
+        CloudHawk Security Alert Summary
+        
+        Service: {service}
+        Total Alerts: {len(alerts)}
+        Severity Breakdown: {', '.join(severity_summary)}
+        
+        Alert Details:
+        """
+        
+        # Add each alert with details
+        for i, alert in enumerate(alerts, 1):
+            body += f"""
+        --- Alert {i} ---
+        Rule ID: {alert.get('id', 'N/A')}
+        Title: {alert.get('title', 'Unknown')}
+        Severity: {alert.get('severity', 'Unknown')}
+        Description: {alert.get('description', 'No description')}
+        Timestamp: {alert.get('timestamp', 'Unknown')}
+        Remediation: {alert.get('remediation', 'No remediation provided')}
+        """
+        
+        body += f"""
+        
+        CloudHawk Security Monitoring System
+        Generated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}
+        """
+        
+        msg.attach(MIMEText(body, 'plain'))
+        
+        # Send email
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(username, password)
+        server.send_message(msg)
+        server.quit()
+        
+        logger.info(f"✅ Consolidated email sent for {service} service with {len(alerts)} alerts")
+        return True
+        
+    except smtplib.SMTPAuthenticationError as e:
+        logger.error(f"SMTP Authentication failed for consolidated alert: {e}")
+        return False
+    except smtplib.SMTPConnectError as e:
+        logger.error(f"SMTP Connection failed for consolidated alert: {e}")
+        return False
+    except smtplib.SMTPException as e:
+        logger.error(f"SMTP Error for consolidated alert: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"Failed to send consolidated email alert for {service}: {e}")
         return False
 
 def calculate_simple_health_score(alerts_data):
@@ -481,13 +535,30 @@ def scan():
         try:
             # Get scan parameters with fallbacks
             config = dashboard.config or dashboard.get_default_config()
+            provider = request.form.get('provider', 'AWS')
             region = request.form.get('region', config.get('aws', {}).get('default_region', 'us-east-1'))
             max_events = int(request.form.get('max_events', config.get('aws', {}).get('max_events_per_service', 1000)))
             
-            flash('Starting security scan...', 'info')
+            flash(f'Starting {provider} security scan...', 'info')
             
-            # Initialize AWS collector
-            collector = AWSCollector(region=region, max_events=max_events)
+            # Initialize appropriate collector based on provider
+            if provider == 'AWS':
+                collector = AWSCollector(region=region, max_events=max_events)
+            elif provider == 'Azure':
+                subscription_id = request.form.get('subscription_id', os.getenv('AZURE_SUBSCRIPTION_ID', ''))
+                if not subscription_id:
+                    flash('Azure subscription ID is required for Azure scans', 'error')
+                    return redirect(url_for('scan'))
+                collector = AzureCollector(subscription_id=subscription_id)
+            elif provider == 'GCP':
+                project_id = request.form.get('project_id', os.getenv('GOOGLE_CLOUD_PROJECT', ''))
+                if not project_id:
+                    flash('GCP project ID is required for GCP scans', 'error')
+                    return redirect(url_for('scan'))
+                collector = GCPCollector(project_id=project_id)
+            else:
+                flash(f'Unsupported cloud provider: {provider}', 'error')
+                return redirect(url_for('scan'))
             
             # Collect security data
             security_events = collector.collect_all_security_data()
@@ -514,11 +585,11 @@ def scan():
                         email_sent += 1
                 
                 if email_sent > 0:
-                    flash(f'Scan completed! Found {len(rule_engine.alerts)} security issues. Sent {email_sent} email alerts for critical/high severity issues.', 'success')
+                    flash(f'{provider} scan completed! Found {len(rule_engine.alerts)} security issues. Sent {email_sent} email alerts for critical/high severity issues.', 'success')
                 else:
-                    flash(f'Scan completed! Found {len(rule_engine.alerts)} security issues.', 'success')
+                    flash(f'{provider} scan completed! Found {len(rule_engine.alerts)} security issues.', 'success')
             else:
-                flash(f'Scan completed! Found {len(rule_engine.alerts)} security issues.', 'success')
+                flash(f'{provider} scan completed! Found {len(rule_engine.alerts)} security issues.', 'success')
             
             # Send Slack alerts if configured
             if slack_config.get('enabled', False):
@@ -575,7 +646,7 @@ def convert_form_data_to_config(form_data):
                 'channel': form_data.get('alerting.channels.slack.channel', '#security-alerts')
             },
             'email': {
-                'enabled': form_data.get('alerting.channels.email.enabled', False),
+                'enabled': form_data.get('alerting.channels.email.enabled') == 'on' or form_data.get('alerting.channels.email.enabled') == True,
                 'smtp_server': form_data.get('alerting.channels.email.smtp_server', ''),
                 'smtp_port': int(form_data.get('alerting.channels.email.smtp_port', 587)),
                 'username': form_data.get('alerting.channels.email.username', ''),
@@ -614,11 +685,21 @@ def api_config():
             # Debug: Log what we received
             print(f"DEBUG: Received config data: {new_config}")
             
+            # Debug: Check specific email fields
+            print(f"DEBUG: Email fields in received data:")
+            print(f"  alerting.channels.email.enabled: {new_config.get('alerting.channels.email.enabled')}")
+            print(f"  alerting.channels.email.smtp_server: {new_config.get('alerting.channels.email.smtp_server')}")
+            print(f"  alerting.channels.email.username: {new_config.get('alerting.channels.email.username')}")
+            print(f"  alerting.channels.email.password: {new_config.get('alerting.channels.email.password')}")
+            print(f"  alerting.channels.email.from_email: {new_config.get('alerting.channels.email.from_email')}")
+            print(f"  alerting.channels.email.to_email: {new_config.get('alerting.channels.email.to_email')}")
+            
             # Convert flat form data to nested structure
             processed_config = convert_form_data_to_config(new_config)
             
             # Debug: Log processed config
             print(f"DEBUG: Processed config: {processed_config}")
+            print(f"DEBUG: Email config in processed: {processed_config.get('alerting', {}).get('channels', {}).get('email', {})}")
             
             # Save configuration to file
             with open(CONFIG_FILE, 'w') as f:
@@ -628,15 +709,8 @@ def api_config():
             dashboard.config = processed_config
             dashboard.config_last_modified = dashboard.get_config_last_modified()
             
-            # Test email configuration if provided
-            email_config = processed_config.get('alerting', {}).get('channels', {}).get('email', {})
-            if email_config.get('enabled', False):
-                email_status = test_email_configuration(email_config)
-                return jsonify({
-                    'status': 'success', 
-                    'message': 'Configuration updated successfully',
-                    'email_test': email_status
-                })
+            # Reload config to ensure it's properly loaded
+            dashboard.load_config()
             
             return jsonify({
                 'status': 'success', 
@@ -649,15 +723,6 @@ def api_config():
     dashboard.reload_config_if_changed()
     return jsonify(dashboard.config)
 
-@app.route('/api/test-email', methods=['POST'])
-def test_email():
-    """Test email configuration endpoint"""
-    try:
-        email_config = request.json
-        result = test_email_configuration(email_config)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/send-alerts', methods=['POST'])
 def send_alerts():
@@ -673,38 +738,53 @@ def send_alerts():
         if not alerts:
             return jsonify({'status': 'error', 'message': 'No alerts to send'}), 400
         
-        # Reload configuration to get latest changes
-        dashboard.reload_config_if_changed()
-        
-        # Get configuration
-        config = dashboard.config or dashboard.get_default_config()
+        # Load alerting configuration from separate file
+        alerting_config_file = 'email_alert_config.json'
         results = {'email': None, 'slack': None}
         
-        # Debug: Log current config
-        print(f"DEBUG: Current config in send_alerts: {config}")
-        print(f"DEBUG: Email config: {config.get('alerting', {}).get('channels', {}).get('email', {})}")
+        if not os.path.exists(alerting_config_file):
+            return jsonify({
+                'status': 'error',
+                'message': 'Alerting configuration file not found. Please configure email/Slack settings first.'
+            }), 404
         
-        # Send email alerts
+        with open(alerting_config_file, 'r') as f:
+            alerting_config = json.load(f)
+        
+        # Debug: Log current config
+        print(f"DEBUG: Alerting config from file: {alerting_config}")
+        
+        # Send email alerts (grouped by service)
         if alert_type in ['all', 'email']:
-            email_config = config.get('alerting', {}).get('channels', {}).get('email', {})
+            email_config = alerting_config.get('email', {})
             if email_config.get('enabled', False):
-                email_sent = 0
+                # Group alerts by service
+                alerts_by_service = {}
                 for alert in alerts:
-                    if send_email_alert(alert, email_config):
-                        email_sent += 1
-                results['email'] = {'status': 'success', 'sent': email_sent, 'total': len(alerts)}
+                    service = alert.get('service', 'Unknown')
+                    if service not in alerts_by_service:
+                        alerts_by_service[service] = []
+                    alerts_by_service[service].append(alert)
+                
+                # Send one email per service
+                emails_sent = 0
+                for service, service_alerts in alerts_by_service.items():
+                    if send_consolidated_email_alert(service, service_alerts, email_config):
+                        emails_sent += 1
+                
+                results['email'] = {'status': 'success', 'sent': emails_sent, 'total': len(alerts_by_service)}
             else:
                 # Provide more detailed error message
                 if not email_config:
-                    results['email'] = {'status': 'error', 'message': 'Email configuration not found'}
+                    results['email'] = {'status': 'error', 'message': 'Email configuration not found in alerting config file'}
                 elif not email_config.get('enabled'):
-                    results['email'] = {'status': 'error', 'message': 'Email alerts are disabled in configuration'}
+                    results['email'] = {'status': 'error', 'message': 'Email alerts are disabled in alerting configuration'}
                 else:
-                    results['email'] = {'status': 'error', 'message': 'Email configuration incomplete'}
+                    results['email'] = {'status': 'error', 'message': 'Email configuration incomplete in alerting config file'}
         
         # Send Slack alerts
         if alert_type in ['all', 'slack']:
-            slack_config = config.get('alerting', {}).get('channels', {}).get('slack', {})
+            slack_config = alerting_config.get('slack', {})
             if slack_config.get('enabled', False):
                 try:
                     from alerts.slack_alert import SlackAlert
@@ -714,7 +794,13 @@ def send_alerts():
                 except Exception as e:
                     results['slack'] = {'status': 'error', 'message': str(e)}
             else:
-                results['slack'] = {'status': 'error', 'message': 'Slack not configured'}
+                # Provide more detailed error message
+                if not slack_config:
+                    results['slack'] = {'status': 'error', 'message': 'Slack configuration not found in alerting config file'}
+                elif not slack_config.get('enabled'):
+                    results['slack'] = {'status': 'error', 'message': 'Slack alerts are disabled in alerting configuration'}
+                else:
+                    results['slack'] = {'status': 'error', 'message': 'Slack configuration incomplete in alerting config file'}
         
         return jsonify({'status': 'success', 'results': results})
     
@@ -758,17 +844,17 @@ def test_save():
         current_config['alerting']['enabled'] = True
         current_config['alerting']['channels']['email']['enabled'] = True
         
-        # Only set test values if no existing email config
+        # Set default email configuration (empty values)
         email_config = current_config['alerting']['channels']['email']
         if not email_config.get('smtp_server') and not email_config.get('username'):
-            # Only set test values if no email configuration exists at all
+            # Set empty default values for email configuration
             email_config.update({
-                'smtp_server': 'smtp.gmail.com',
+                'smtp_server': '',
                 'smtp_port': 587,
-                'username': 'test@example.com',
-                'password': 'testpassword',
-                'from_email': 'test@example.com',
-                'to_email': 'test@example.com'
+                'username': '',
+                'password': '',
+                'from_email': '',
+                'to_email': ''
             })
         
         # Save configuration
@@ -783,25 +869,139 @@ def test_save():
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
-@app.route('/api/test-email-only', methods=['POST'])
-def test_email_only():
-    """Test email sending without changing configuration"""
+
+@app.route('/api/save-email-config', methods=['POST'])
+def save_email_config():
+    """Save email configuration to separate file"""
     try:
-        # Get current email configuration
-        config = dashboard.config or dashboard.get_default_config()
-        email_config = config.get('alerting', {}).get('channels', {}).get('email', {})
+        form_data = request.json
         
+        # Extract complete alerting configuration from form data
+        alerting_config = {
+            'alerting_enabled': form_data.get('alerting.enabled') == 'on' or form_data.get('alerting.enabled') == True,
+            'slack': {
+                'enabled': form_data.get('alerting.channels.slack.enabled') == 'on' or form_data.get('alerting.channels.slack.enabled') == True,
+                'webhook_url': form_data.get('alerting.channels.slack.webhook_url', ''),
+                'channel': form_data.get('alerting.channels.slack.channel', '#security-alerts')
+            },
+            'email': {
+                'enabled': form_data.get('alerting.channels.email.enabled') == 'on' or form_data.get('alerting.channels.email.enabled') == True,
+                'smtp_server': form_data.get('alerting.channels.email.smtp_server', ''),
+                'smtp_port': int(form_data.get('alerting.channels.email.smtp_port', 587)),
+                'username': form_data.get('alerting.channels.email.username', ''),
+                'password': form_data.get('alerting.channels.email.password', ''),
+                'from_email': form_data.get('alerting.channels.email.from_email', ''),
+                'to_email': form_data.get('alerting.channels.email.to_email', '')
+            },
+            'last_updated': datetime.utcnow().isoformat()
+        }
+        
+        # Save to separate alerting config file
+        alerting_config_file = 'email_alert_config.json'
+        with open(alerting_config_file, 'w') as f:
+            json.dump(alerting_config, f, indent=2)
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Alerting configuration saved successfully',
+            'config_file': alerting_config_file
+        })
+        
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/debug-email-config-file', methods=['GET'])
+def debug_email_config_file():
+    """Debug endpoint to check email configuration from separate file"""
+    try:
+        email_config_file = 'email_alert_config.json'
+        
+        if not os.path.exists(email_config_file):
+            return jsonify({
+                'status': 'error',
+                'message': 'Email configuration file not found. Please save email configuration first.'
+            }), 404
+        
+        with open(email_config_file, 'r') as f:
+            alerting_config = json.load(f)
+        
+        # Check email fields
+        email_config = alerting_config.get('email', {})
+        email_required_fields = ['smtp_server', 'username', 'password', 'from_email', 'to_email']
+        email_missing_fields = []
+        email_present_fields = {}
+        
+        for field in email_required_fields:
+            value = email_config.get(field, '')
+            if not value:
+                email_missing_fields.append(field)
+            else:
+                # Mask password for security
+                if field == 'password':
+                    email_present_fields[field] = '***' + value[-4:] if len(value) > 4 else '***'
+                else:
+                    email_present_fields[field] = value
+        
+        # Check slack fields
+        slack_config = alerting_config.get('slack', {})
+        slack_required_fields = ['webhook_url', 'channel']
+        slack_missing_fields = []
+        slack_present_fields = {}
+        
+        for field in slack_required_fields:
+            value = slack_config.get(field, '')
+            if not value:
+                slack_missing_fields.append(field)
+            else:
+                slack_present_fields[field] = value
+        
+        return jsonify({
+            'status': 'success',
+            'alerting_enabled': alerting_config.get('alerting_enabled', False),
+            'email_enabled': email_config.get('enabled', False),
+            'slack_enabled': slack_config.get('enabled', False),
+            'email_missing_fields': email_missing_fields,
+            'email_present_fields': email_present_fields,
+            'slack_missing_fields': slack_missing_fields,
+            'slack_present_fields': slack_present_fields,
+            'email_all_required_present': len(email_missing_fields) == 0,
+            'slack_all_required_present': len(slack_missing_fields) == 0,
+            'last_updated': alerting_config.get('last_updated', 'Unknown'),
+            'full_alerting_config': alerting_config
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/send-alert-from-config', methods=['POST'])
+def send_alert_from_config():
+    """Send alert using email configuration from separate file"""
+    try:
+        email_config_file = 'email_alert_config.json'
+        
+        if not os.path.exists(email_config_file):
+            return jsonify({
+                'status': 'error',
+                'message': 'Email configuration file not found. Please save email configuration first.'
+            }), 404
+        
+        with open(email_config_file, 'r') as f:
+            alerting_config = json.load(f)
+        
+        email_config = alerting_config.get('email', {})
         if not email_config.get('enabled', False):
-            return jsonify({'status': 'error', 'message': 'Email alerts are not enabled. Please enable them first.'}), 400
+            return jsonify({
+                'status': 'error',
+                'message': 'Email alerts are not enabled in configuration file.'
+            }), 400
         
         # Create a test alert
         test_alert = {
             'timestamp': datetime.utcnow().isoformat(),
-            'title': 'CloudHawk Email Test',
-            'description': 'This is a test email from CloudHawk to verify your email configuration is working correctly.',
+            'title': 'CloudHawk Test Alert',
+            'description': 'This is a test alert from CloudHawk to verify your email configuration is working correctly.',
             'severity': 'INFO',
             'service': 'SYSTEM',
-            'remediation': 'No action required - this is just a test email.'
+            'remediation': 'No action required - this is just a test alert.'
         }
         
         # Send test email
@@ -809,79 +1009,31 @@ def test_email_only():
             success = send_email_alert(test_alert, email_config)
             
             if success:
-                return jsonify({'status': 'success', 'message': 'Test email sent successfully! Check your inbox.'})
+                return jsonify({
+                    'status': 'success', 
+                    'message': 'Test alert sent successfully! Check your inbox.',
+                    'results': {
+                        'email': {
+                            'status': 'success',
+                            'sent': 1,
+                            'total': 1
+                        }
+                    }
+                })
             else:
-                return jsonify({'status': 'error', 'message': 'Failed to send test email. Check your email configuration.'})
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Failed to send test alert. Check your email configuration.'
+                })
         except Exception as e:
-            return jsonify({'status': 'error', 'message': f'Email sending error: {str(e)}'})
+            return jsonify({
+                'status': 'error',
+                'message': f'Email sending error: {str(e)}'
+            })
     
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
-@app.route('/api/debug-email-config', methods=['GET'])
-def debug_email_config():
-    """Debug endpoint to check email configuration details"""
-    try:
-        config = dashboard.config or dashboard.get_default_config()
-        email_config = config.get('alerting', {}).get('channels', {}).get('email', {})
-        
-        # Check what fields are missing
-        required_fields = ['smtp_server', 'username', 'password', 'from_email', 'to_email']
-        missing_fields = []
-        present_fields = {}
-        
-        for field in required_fields:
-            value = email_config.get(field, '')
-            if not value:
-                missing_fields.append(field)
-            else:
-                # Mask password for security
-                if field == 'password':
-                    present_fields[field] = '***' + value[-4:] if len(value) > 4 else '***'
-                else:
-                    present_fields[field] = value
-        
-        return jsonify({
-            'status': 'success',
-            'email_enabled': email_config.get('enabled', False),
-            'alerting_enabled': config.get('alerting', {}).get('enabled', False),
-            'missing_fields': missing_fields,
-            'present_fields': present_fields,
-            'all_required_present': len(missing_fields) == 0,
-            'full_email_config': email_config
-        })
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
-@app.route('/api/clear-test-config', methods=['POST'])
-def clear_test_config():
-    """Clear test configuration and reset email settings"""
-    try:
-        dashboard.reload_config_if_changed()
-        current_config = dashboard.config.copy()
-        
-        # Reset email configuration to empty values
-        current_config['alerting']['channels']['email'] = {
-            'enabled': False,
-            'smtp_server': '',
-            'smtp_port': 587,
-            'username': '',
-            'password': '',
-            'from_email': '',
-            'to_email': ''
-        }
-        
-        # Save configuration
-        with open(CONFIG_FILE, 'w') as f:
-            yaml.dump(current_config, f, default_flow_style=False)
-        
-        # Reload dashboard configuration
-        dashboard.config = current_config
-        
-        return jsonify({'status': 'success', 'message': 'Test configuration cleared successfully'})
-        
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)})
 
 @app.route('/api/send-notification', methods=['POST'])
 def send_notification():
@@ -953,6 +1105,165 @@ def api_rules():
         return jsonify(rules_data)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/rules/add', methods=['POST'])
+def api_add_rule():
+    """Add a new security rule"""
+    try:
+        new_rule = request.json
+        
+        # Load existing rules
+        with open(RULES_FILE, 'r') as f:
+            rules_data = yaml.safe_load(f)
+        
+        # Check if rule ID already exists
+        existing_ids = [rule.get('id') for rule in rules_data.get('rules', [])]
+        if new_rule.get('id') in existing_ids:
+            return jsonify({'status': 'error', 'message': 'Rule ID already exists'}), 400
+        
+        # Add new rule
+        if 'rules' not in rules_data:
+            rules_data['rules'] = []
+        
+        rules_data['rules'].append(new_rule)
+        
+        # Save updated rules
+        with open(RULES_FILE, 'w') as f:
+            yaml.dump(rules_data, f, default_flow_style=False)
+        
+        return jsonify({'status': 'success', 'message': 'Rule added successfully'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/rules/edit', methods=['POST'])
+def api_edit_rule():
+    """Edit an existing security rule"""
+    try:
+        updated_rule = request.json
+        rule_id = updated_rule.get('id')
+        
+        # Load existing rules
+        with open(RULES_FILE, 'r') as f:
+            rules_data = yaml.safe_load(f)
+        
+        # Find and update the rule
+        rules = rules_data.get('rules', [])
+        for i, rule in enumerate(rules):
+            if rule.get('id') == rule_id:
+                rules[i] = updated_rule
+                break
+        else:
+            return jsonify({'status': 'error', 'message': 'Rule not found'}), 404
+        
+        # Save updated rules
+        with open(RULES_FILE, 'w') as f:
+            yaml.dump(rules_data, f, default_flow_style=False)
+        
+        return jsonify({'status': 'success', 'message': 'Rule updated successfully'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/rules/delete', methods=['POST'])
+def api_delete_rule():
+    """Delete a security rule"""
+    try:
+        data = request.json
+        rule_id = data.get('id')
+        
+        # Load existing rules
+        with open(RULES_FILE, 'r') as f:
+            rules_data = yaml.safe_load(f)
+        
+        # Remove the rule
+        rules = rules_data.get('rules', [])
+        rules_data['rules'] = [rule for rule in rules if rule.get('id') != rule_id]
+        
+        # Save updated rules
+        with open(RULES_FILE, 'w') as f:
+            yaml.dump(rules_data, f, default_flow_style=False)
+        
+        return jsonify({'status': 'success', 'message': 'Rule deleted successfully'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/rules/bulk-delete', methods=['POST'])
+def api_bulk_delete_rules():
+    """Bulk delete security rules"""
+    try:
+        data = request.json
+        rule_ids = data.get('ids', [])
+        
+        # Load existing rules
+        with open(RULES_FILE, 'r') as f:
+            rules_data = yaml.safe_load(f)
+        
+        # Remove the rules
+        rules = rules_data.get('rules', [])
+        rules_data['rules'] = [rule for rule in rules if rule.get('id') not in rule_ids]
+        
+        # Save updated rules
+        with open(RULES_FILE, 'w') as f:
+            yaml.dump(rules_data, f, default_flow_style=False)
+        
+        return jsonify({'status': 'success', 'message': f'{len(rule_ids)} rules deleted successfully'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/rules/bulk-disable', methods=['POST'])
+def api_bulk_disable_rules():
+    """Bulk disable security rules"""
+    try:
+        data = request.json
+        rule_ids = data.get('ids', [])
+        
+        # Load existing rules
+        with open(RULES_FILE, 'r') as f:
+            rules_data = yaml.safe_load(f)
+        
+        # Update the rules
+        rules = rules_data.get('rules', [])
+        for rule in rules:
+            if rule.get('id') in rule_ids:
+                rule['status'] = 'disabled'
+        
+        # Save updated rules
+        with open(RULES_FILE, 'w') as f:
+            yaml.dump(rules_data, f, default_flow_style=False)
+        
+        return jsonify({'status': 'success', 'message': f'{len(rule_ids)} rules disabled successfully'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/rules/bulk-edit', methods=['POST'])
+def api_bulk_edit_rules():
+    """Bulk edit security rules"""
+    try:
+        data = request.json
+        rule_ids = data.get('ids', [])
+        changes = {k: v for k, v in data.items() if k != 'ids' and v}
+        
+        if not changes:
+            return jsonify({'status': 'error', 'message': 'No changes specified'}), 400
+        
+        # Load existing rules
+        with open(RULES_FILE, 'r') as f:
+            rules_data = yaml.safe_load(f)
+        
+        # Update the rules
+        rules = rules_data.get('rules', [])
+        updated_count = 0
+        for rule in rules:
+            if rule.get('id') in rule_ids:
+                rule.update(changes)
+                updated_count += 1
+        
+        # Save updated rules
+        with open(RULES_FILE, 'w') as f:
+            yaml.dump(rules_data, f, default_flow_style=False)
+        
+        return jsonify({'status': 'success', 'message': f'{updated_count} rules updated successfully'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/health')
 def health():
