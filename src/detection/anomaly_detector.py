@@ -10,10 +10,16 @@ import os
 import json
 import logging
 import numpy as np
+import pandas as pd
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional, Tuple
 from collections import defaultdict, Counter
 import statistics
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import DBSCAN
+from sklearn.decomposition import PCA
+import joblib
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -30,6 +36,19 @@ class AnomalyDetector:
         self.min_samples = self.config.get('min_samples', 10)  # Minimum samples for baseline
         self.time_window_hours = self.config.get('time_window_hours', 24)
         
+        # ML Models
+        self.isolation_forest = IsolationForest(contamination=0.1, random_state=42)
+        self.scaler = StandardScaler()
+        self.dbscan = DBSCAN(eps=0.5, min_samples=5)
+        self.pca = PCA(n_components=0.95)
+        
+        # Model persistence
+        self.model_dir = os.path.join(os.path.dirname(__file__), 'models')
+        os.makedirs(self.model_dir, exist_ok=True)
+        
+        # Load existing models if available
+        self._load_models()
+        
         # Anomaly patterns to detect
         self.patterns = {
             'unusual_access_times': self._detect_unusual_access_times,
@@ -39,7 +58,9 @@ class AnomalyDetector:
             'unusual_user_behavior': self._detect_unusual_user_behavior,
             'unusual_error_patterns': self._detect_unusual_error_patterns,
             'unusual_data_transfer': self._detect_unusual_data_transfer,
-            'unusual_privilege_escalation': self._detect_unusual_privilege_escalation
+            'unusual_privilege_escalation': self._detect_unusual_privilege_escalation,
+            'ml_anomaly_detection': self._detect_ml_anomalies,
+            'behavioral_analysis': self._detect_behavioral_anomalies
         }
     
     def analyze_events(self, events: List[Dict]) -> List[Dict]:
@@ -69,6 +90,259 @@ class AnomalyDetector:
         
         logger.info(f"Total anomalies detected: {len(anomalies)}")
         return anomalies
+    
+    def _load_models(self):
+        """Load pre-trained models if available"""
+        try:
+            isolation_forest_path = os.path.join(self.model_dir, 'isolation_forest.joblib')
+            scaler_path = os.path.join(self.model_dir, 'scaler.joblib')
+            
+            if os.path.exists(isolation_forest_path):
+                self.isolation_forest = joblib.load(isolation_forest_path)
+                logger.info("Loaded pre-trained Isolation Forest model")
+            
+            if os.path.exists(scaler_path):
+                self.scaler = joblib.load(scaler_path)
+                logger.info("Loaded pre-trained scaler")
+                
+        except Exception as e:
+            logger.warning(f"Could not load pre-trained models: {e}")
+    
+    def _save_models(self):
+        """Save trained models"""
+        try:
+            isolation_forest_path = os.path.join(self.model_dir, 'isolation_forest.joblib')
+            scaler_path = os.path.join(self.model_dir, 'scaler.joblib')
+            
+            joblib.dump(self.isolation_forest, isolation_forest_path)
+            joblib.dump(self.scaler, scaler_path)
+            
+            logger.info("Saved trained models")
+            
+        except Exception as e:
+            logger.error(f"Could not save models: {e}")
+    
+    def _detect_ml_anomalies(self, grouped_events: Dict) -> List[Dict]:
+        """Detect anomalies using machine learning models"""
+        anomalies = []
+        
+        try:
+            # Prepare features for ML
+            features_df = self._prepare_features(grouped_events)
+            
+            if len(features_df) < self.min_samples:
+                logger.warning("Not enough samples for ML anomaly detection")
+                return anomalies
+            
+            # Scale features
+            features_scaled = self.scaler.fit_transform(features_df)
+            
+            # Train Isolation Forest
+            self.isolation_forest.fit(features_scaled)
+            
+            # Predict anomalies
+            anomaly_scores = self.isolation_forest.decision_function(features_scaled)
+            anomaly_predictions = self.isolation_forest.predict(features_scaled)
+            
+            # Identify anomalies
+            for i, (score, prediction) in enumerate(zip(anomaly_scores, anomaly_predictions)):
+                if prediction == -1:  # Anomaly
+                    anomaly_score = abs(score)
+                    
+                    # Create anomaly event
+                    anomaly = {
+                        'timestamp': datetime.utcnow().isoformat(),
+                        'source': 'ML_ANOMALY_DETECTOR',
+                        'resource_id': f"ml_anomaly_{i}",
+                        'event_type': 'ML_ANOMALY',
+                        'severity': self._map_anomaly_score_to_severity(anomaly_score),
+                        'description': f"ML-based anomaly detected with score {anomaly_score:.3f}",
+                        'raw_event': {
+                            'anomaly_score': anomaly_score,
+                            'features': features_df.iloc[i].to_dict(),
+                            'model': 'IsolationForest'
+                        },
+                        'additional_fields': {
+                            'ml_anomaly': {
+                                'score': anomaly_score,
+                                'model': 'IsolationForest',
+                                'features_used': list(features_df.columns),
+                                'confidence': min(anomaly_score * 2, 1.0)
+                            }
+                        }
+                    }
+                    anomalies.append(anomaly)
+            
+            # Save updated models
+            self._save_models()
+            
+        except Exception as e:
+            logger.error(f"Error in ML anomaly detection: {e}")
+        
+        return anomalies
+    
+    def _detect_behavioral_anomalies(self, grouped_events: Dict) -> List[Dict]:
+        """Detect behavioral anomalies using clustering and pattern analysis"""
+        anomalies = []
+        
+        try:
+            # Prepare behavioral features
+            behavioral_df = self._prepare_behavioral_features(grouped_events)
+            
+            if len(behavioral_df) < self.min_samples:
+                return anomalies
+            
+            # Apply PCA for dimensionality reduction
+            features_scaled = self.scaler.fit_transform(behavioral_df)
+            features_pca = self.pca.fit_transform(features_scaled)
+            
+            # Cluster analysis
+            clusters = self.dbscan.fit_predict(features_pca)
+            
+            # Find outliers (noise points in DBSCAN)
+            noise_points = np.where(clusters == -1)[0]
+            
+            for point_idx in noise_points:
+                if point_idx < len(behavioral_df):
+                    anomaly = {
+                        'timestamp': datetime.utcnow().isoformat(),
+                        'source': 'BEHAVIORAL_ANALYZER',
+                        'resource_id': f"behavioral_anomaly_{point_idx}",
+                        'event_type': 'BEHAVIORAL_ANOMALY',
+                        'severity': 'MEDIUM',
+                        'description': f"Behavioral anomaly detected in cluster analysis",
+                        'raw_event': {
+                            'cluster_id': -1,
+                            'behavioral_features': behavioral_df.iloc[point_idx].to_dict()
+                        },
+                        'additional_fields': {
+                            'behavioral_anomaly': {
+                                'cluster_id': -1,
+                                'features': behavioral_df.iloc[point_idx].to_dict(),
+                                'analysis_type': 'DBSCAN_Clustering'
+                            }
+                        }
+                    }
+                    anomalies.append(anomaly)
+            
+        except Exception as e:
+            logger.error(f"Error in behavioral anomaly detection: {e}")
+        
+        return anomalies
+    
+    def _prepare_features(self, grouped_events: Dict) -> pd.DataFrame:
+        """Prepare features for ML models"""
+        features = []
+        
+        for event_type, events in grouped_events.items():
+            for event in events:
+                feature_vector = self._extract_event_features(event)
+                if feature_vector:
+                    features.append(feature_vector)
+        
+        if not features:
+            return pd.DataFrame()
+        
+        return pd.DataFrame(features)
+    
+    def _prepare_behavioral_features(self, grouped_events: Dict) -> pd.DataFrame:
+        """Prepare behavioral features for clustering"""
+        features = []
+        
+        # Extract behavioral patterns
+        for event_type, events in grouped_events.items():
+            for event in events:
+                behavioral_vector = self._extract_behavioral_features(event)
+                if behavioral_vector:
+                    features.append(behavioral_vector)
+        
+        if not features:
+            return pd.DataFrame()
+        
+        return pd.DataFrame(features)
+    
+    def _extract_event_features(self, event: Dict) -> Optional[Dict]:
+        """Extract numerical features from event"""
+        try:
+            features = {}
+            
+            # Time-based features
+            timestamp = event.get('timestamp', '')
+            if timestamp:
+                dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                features['hour'] = dt.hour
+                features['day_of_week'] = dt.weekday()
+                features['day_of_month'] = dt.day
+            
+            # Severity encoding
+            severity_map = {'CRITICAL': 4, 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1, 'INFO': 0}
+            features['severity_numeric'] = severity_map.get(event.get('severity', 'INFO'), 0)
+            
+            # Source encoding (simple hash)
+            source = event.get('source', '')
+            features['source_hash'] = hash(source) % 1000
+            
+            # Event type encoding
+            event_type = event.get('event_type', '')
+            features['event_type_hash'] = hash(event_type) % 1000
+            
+            # Resource ID length (proxy for complexity)
+            resource_id = event.get('resource_id', '')
+            features['resource_id_length'] = len(resource_id)
+            
+            # Raw event size
+            raw_event = event.get('raw_event', {})
+            features['raw_event_size'] = len(str(raw_event))
+            
+            return features
+            
+        except Exception as e:
+            logger.error(f"Error extracting event features: {e}")
+            return None
+    
+    def _extract_behavioral_features(self, event: Dict) -> Optional[Dict]:
+        """Extract behavioral features for clustering"""
+        try:
+            features = {}
+            
+            # User behavior patterns
+            user_identity = event.get('raw_event', {}).get('userIdentity', {})
+            if user_identity:
+                features['user_type_encoded'] = hash(user_identity.get('type', '')) % 100
+                features['has_mfa'] = 1 if user_identity.get('mfaAuthenticated') else 0
+            
+            # Geographic patterns
+            source_ip = event.get('raw_event', {}).get('sourceIPAddress', '')
+            features['has_source_ip'] = 1 if source_ip else 0
+            features['ip_length'] = len(source_ip)
+            
+            # API usage patterns
+            event_name = event.get('raw_event', {}).get('eventName', '')
+            features['event_name_length'] = len(event_name)
+            features['is_high_risk_event'] = 1 if event_name in [
+                'DeleteBucket', 'DeleteUser', 'DeleteRole', 'StopLogging'
+            ] else 0
+            
+            # Resource access patterns
+            resource_id = event.get('resource_id', '')
+            features['resource_complexity'] = len(resource_id.split('/'))
+            
+            return features
+            
+        except Exception as e:
+            logger.error(f"Error extracting behavioral features: {e}")
+            return None
+    
+    def _map_anomaly_score_to_severity(self, score: float) -> str:
+        """Map anomaly score to severity level"""
+        if score > 0.8:
+            return 'CRITICAL'
+        elif score > 0.6:
+            return 'HIGH'
+        elif score > 0.4:
+            return 'MEDIUM'
+        else:
+            return 'LOW'
     
     def _group_events(self, events: List[Dict]) -> Dict:
         """Group events by various dimensions"""

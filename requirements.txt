@@ -46,6 +46,7 @@ python-dateutil>=2.8.0
 
 # Machine learning and statistics
 scikit-learn>=1.0.0
+joblib>=1.1.0
 
 # Development dependencies (optional)
 pytest>=7.0.0

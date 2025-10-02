@@ -32,11 +32,19 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from detection.rule_engine import RuleEngine
 from collector.aws_collector import AWSCollector
-from collector.azure_collector import AzureCollector
 from collector.gcp_collector import GCPCollector
+from collector.azure_collector import AzureCollector
+
+# Import API modules
+from api.routes import api_bp
+from api.swagger import swagger_bp
 
 app = Flask(__name__)
 app.secret_key = 'cloudhawk-secret-key-change-in-production'
+
+# Register API blueprints
+app.register_blueprint(api_bp)
+app.register_blueprint(swagger_bp)
 
 # Configuration
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -1278,6 +1286,11 @@ def health():
 def health_page():
     """Health dashboard page"""
     return render_template('health.html')
+
+@app.route('/enhanced-dashboard')
+def enhanced_dashboard():
+    """Enhanced dashboard with advanced filtering and visualization"""
+    return render_template('enhanced_dashboard.html')
 
 @app.route('/api/health')
 def api_health():

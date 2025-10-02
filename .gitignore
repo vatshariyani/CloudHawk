@@ -1,5 +1,4 @@
-# CloudHawk .dockerignore
-# Optimized for Docker builds
+# CloudHawk .gitignore
 
 # Python cache files
 __pycache__/
@@ -124,7 +123,7 @@ dmypy.json
 .pyre/
 
 # CloudHawk specific
-# Log files (exclude from Docker build)
+# Log files
 *.log
 logs/
 cloudhawk.log
@@ -133,11 +132,11 @@ cloudhawk.log
 src/web/logs/
 src/collector/logs/
 
-# Configuration files with secrets (will be mounted as volumes)
+# Configuration files with secrets
 config.yaml
 src/config.yaml
 
-# Model files (can be regenerated, will be mounted as volumes)
+# Model files (can be regenerated)
 src/detection/models/
 
 # Temporary files
@@ -155,42 +154,5 @@ src/detection/models/
 .DS_Store
 Thumbs.db
 
-# Git files
-.git/
-.gitignore
-
-# Docker files (exclude from Docker build)
-Dockerfile
-docker-compose.yml
+# Docker
 .dockerignore
-
-# Documentation files (exclude from Docker build)
-README.md
-docs/
-*.md
-
-# Test files (exclude from Docker build)
-tests/
-test_*.py
-*_test.py
-
-# Setup files (exclude from Docker build)
-setup.sh
-setup.py
-
-# Binary files
-bin/
-*.exe
-*.dll
-*.so
-*.dylib
-
-# Backup files
-*.bak
-*.backup
-*.old
-
-# Lock files
-*.lock
-package-lock.json
-yarn.lock
