@@ -134,7 +134,7 @@ src/web/logs/
 src/collector/logs/
 
 # Configuration files with secrets (will be mounted as volumes)
-config.yaml
+# config.yaml - commented out to allow copying
 src/config.yaml
 
 # Model files (can be regenerated, will be mounted as volumes)
@@ -165,18 +165,20 @@ docker-compose.yml
 .dockerignore
 
 # Documentation files (exclude from Docker build)
-README.md
-docs/
+# README.md - commented out to allow copying
+# docs/ - commented out to allow copying
+# Allow README.md to be copied
 *.md
+!README.md
 
 # Test files (exclude from Docker build)
-tests/
+# tests/ - commented out to allow copying
 test_*.py
 *_test.py
 
 # Setup files (exclude from Docker build)
 setup.sh
-setup.py
+# setup.py - commented out to allow copying
 
 # Binary files
 bin/
