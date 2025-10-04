@@ -223,7 +223,7 @@ class SlackAlerter:
         attachment = {
             "color": color,
             "title": f"{emoji} {alert.get('title', 'Security Alert')}",
-            "title_link": "https://github.com/yourusername/cloudhawk",
+            "title_link": "https://github.com/vatshariyani/cloudhawk",
             "fields": [
                 {
                     "title": "Severity",

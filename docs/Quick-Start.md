@@ -4,7 +4,40 @@ Get up and running with CloudHawk in just a few minutes! This guide will walk yo
 
 ## ⚡ 5-Minute Setup
 
-### Step 1: Install CloudHawk
+### Option 1: Docker Deployment (Recommended)
+
+#### Step 1: Clone and Setup
+```bash
+# Clone the repository
+git clone https://github.com/vatshariyani/cloudhawk.git
+cd cloudhawk
+
+# Setup CloudHawk (creates .env file and directories)
+./scripts/docker-deploy.sh setup
+```
+
+#### Step 2: Configure Cloud Access
+```bash
+# Edit the .env file with your credentials
+nano .env
+
+# Add your AWS credentials:
+# AWS_ACCESS_KEY_ID=your_aws_access_key_id
+# AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
+# AWS_DEFAULT_REGION=us-east-1
+```
+
+#### Step 3: Start CloudHawk
+```bash
+# Start CloudHawk
+./scripts/docker-deploy.sh start
+
+# Open your browser to http://localhost:5000
+```
+
+### Option 2: Manual Installation
+
+#### Step 1: Install CloudHawk
 ```bash
 # Clone the repository
 git clone https://github.com/vatshariyani/cloudhawk.git
@@ -14,7 +47,7 @@ cd cloudhawk
 pip install -r requirements.txt
 ```
 
-### Step 2: Configure Cloud Access
+#### Step 2: Configure Cloud Access
 ```bash
 # For AWS (choose one method)
 aws configure
@@ -29,7 +62,7 @@ az login
 gcloud auth login
 ```
 
-### Step 3: Start CloudHawk
+#### Step 3: Start CloudHawk
 ```bash
 # Start the web dashboard
 python src/web/app.py

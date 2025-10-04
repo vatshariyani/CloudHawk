@@ -1,10 +1,10 @@
 {
-  "timestamp": "2025-09-28T11:29:31.392487",
+  "timestamp": "2025-10-02T17:50:36.721541",
   "total_alerts": 3,
   "rules_processed": 55,
   "alerts": [
     {
-      "timestamp": "2025-09-28T11:29:30.388645",
+      "timestamp": "2025-10-02T17:50:35.705426",
       "rule_id": "EC2-SG-001",
       "title": "SSH open to world",
       "description": "Security group allows SSH (port 22) from anywhere",
@@ -12,7 +12,7 @@
       "remediation": "Restrict SSH access to specific IP ranges or use VPN/bastion host",
       "service": "EC2",
       "log_excerpt": {
-        "timestamp": "2025-09-28T11:29:19.310079",
+        "timestamp": "2025-10-02T17:50:24.566034",
         "source": "AWS_EC2_SG",
         "resource_id": "sg-007ac448ce2979195",
         "event_type": "SECURITY_GROUP_RULE",
@@ -67,7 +67,7 @@
       }
     },
     {
-      "timestamp": "2025-09-28T11:29:30.388936",
+      "timestamp": "2025-10-02T17:50:35.705691",
       "rule_id": "IAM-ACCOUNT-001",
       "title": "Weak password policy",
       "description": "Account has weak password policy (less than 8 characters)",
@@ -75,7 +75,7 @@
       "remediation": "Enforce stronger password policy with minimum 8 characters",
       "service": "IAM",
       "log_excerpt": {
-        "timestamp": "2025-09-28T11:29:24.020562",
+        "timestamp": "2025-10-02T17:50:30.491924",
         "source": "AWS_IAM_ACCOUNT",
         "resource_id": "ACCOUNT",
         "event_type": "WEAK_PASSWORD_POLICY",
@@ -119,11 +119,11 @@
             "GroupsQuota": 300
           },
           "ResponseMetadata": {
-            "RequestId": "673403c7-2d71-4e96-bc13-2c3de3883793",
+            "RequestId": "953aa28d-1f65-44b1-a69a-d920ee658882",
             "HTTPStatusCode": 200,
             "HTTPHeaders": {
-              "date": "Sun, 28 Sep 2025 11:29:26 GMT",
-              "x-amzn-requestid": "673403c7-2d71-4e96-bc13-2c3de3883793",
+              "date": "Thu, 02 Oct 2025 17:50:32 GMT",
+              "x-amzn-requestid": "953aa28d-1f65-44b1-a69a-d920ee658882",
               "content-type": "text/xml",
               "content-length": "3482"
             },
@@ -173,7 +173,7 @@
       }
     },
     {
-      "timestamp": "2025-09-28T11:29:30.389113",
+      "timestamp": "2025-10-02T17:50:35.705873",
       "rule_id": "COLLECT-001",
       "title": "AWS collection error",
       "description": "Error occurred during AWS data collection",
@@ -181,7 +181,7 @@
       "remediation": "Check AWS credentials and permissions, review error logs",
       "service": "COLLECTION",
       "log_excerpt": {
-        "timestamp": "2025-09-28T11:29:30.322609",
+        "timestamp": "2025-10-02T17:50:35.662446",
         "source": "AWS_GUARDDUTY",
         "resource_id": "N/A",
         "event_type": "COLLECTION_ERROR",

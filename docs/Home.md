@@ -8,6 +8,7 @@ Welcome to the CloudHawk Wiki! This comprehensive documentation will help you ge
 - [Installation Guide](Installation.md) - Set up CloudHawk on your system
 - [Quick Start](Quick-Start.md) - Get up and running in minutes
 - [Configuration](Configuration.md) - Configure CloudHawk for your environment
+- [Docker Deployment](Docker-Deployment.md) - Containerized deployment with pre-built images
 
 ### ☁️ Cloud Provider Setup
 - [AWS Setup](AWS-Setup.md) - Configure AWS monitoring
@@ -23,7 +24,6 @@ Welcome to the CloudHawk Wiki! This comprehensive documentation will help you ge
 ### 🔧 Advanced Topics
 - [API Reference](API-Reference.md) - RESTful API documentation
 - [Custom Rules](Custom-Rules.md) - Creating custom detection rules
-- [Docker Deployment](Docker-Deployment.md) - Containerized deployment
 - [Performance Tuning](Performance-Tuning.md) - Optimize CloudHawk performance
 
 ### 🛠️ Development
@@ -48,7 +48,7 @@ CloudHawk is an open-source, multi-cloud security monitoring tool that provides 
 - **Flexible Alerting**: Email and Slack notifications with consolidated reporting
 - **Web Dashboard**: Modern, responsive interface with dark/light themes
 - **API Integration**: RESTful API for external tool integration
-- **Docker Support**: Containerized deployment for any environment
+- **Docker Support**: Pre-built images and containerized deployment for any environment
 
 ### 🏗️ Architecture Overview
 
@@ -78,14 +78,14 @@ CloudHawk is an open-source, multi-cloud security monitoring tool that provides 
 ## 🚀 Quick Navigation
 
 ### For New Users
-1. Start with [Installation Guide](Installation.md)
+1. Start with [Installation Guide](Installation.md) or [Docker Deployment](Docker-Deployment.md)
 2. Follow [Quick Start](Quick-Start.md) for your first scan
 3. Configure [Alerting Setup](Alerting-Setup.md) for notifications
 
 ### For Administrators
 1. Review [Configuration](Configuration.md) for system setup
 2. Set up cloud providers: [AWS](AWS-Setup.md), [Azure](Azure-Setup.md), [GCP](GCP-Setup.md)
-3. Configure [Docker Deployment](Docker-Deployment.md) for production
+3. Deploy with [Docker Deployment](Docker-Deployment.md) for production
 
 ### For Developers
 1. Read [Developer Guide](Developer-Guide.md) for contribution guidelines
@@ -151,7 +151,7 @@ CloudHawk is an open-source, multi-cloud security monitoring tool that provides 
 - **Low Resource Usage**: < 512MB memory for typical workloads
 - **Scalable Architecture**: Multi-threaded processing with configurable workers
 - **Efficient Storage**: JSON-based log storage with compression
-- **Container Ready**: Docker and Kubernetes deployment support
+- **Container Ready**: Pre-built Docker images and Kubernetes deployment support
 
 ## 🔒 Security & Privacy
 

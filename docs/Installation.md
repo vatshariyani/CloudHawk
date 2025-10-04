@@ -19,7 +19,25 @@ This guide will help you install CloudHawk on your system. CloudHawk supports mu
 
 ### Method 1: Docker Installation (Recommended)
 
-#### Quick Start with Docker Compose
+#### Option A: Pre-built Image (Easiest)
+```bash
+# Clone the repository
+git clone https://github.com/vatshariyani/cloudhawk.git
+cd cloudhawk
+
+# Setup CloudHawk (creates .env file and directories)
+./scripts/docker-deploy.sh setup
+
+# Edit .env file with your credentials
+nano .env
+
+# Start CloudHawk
+./scripts/docker-deploy.sh start
+
+# Access the web dashboard at http://localhost:5000
+```
+
+#### Option B: Docker Compose (Build from Source)
 ```bash
 # Clone the repository
 git clone https://github.com/vatshariyani/cloudhawk.git
@@ -31,7 +49,7 @@ docker-compose up -d
 # Access the web dashboard at http://localhost:5000
 ```
 
-#### Manual Docker Build
+#### Option C: Manual Docker Build
 ```bash
 # Build the image
 docker build -t cloudhawk .
@@ -40,9 +58,9 @@ docker build -t cloudhawk .
 docker run -d \
   --name cloudhawk \
   -p 5000:5000 \
-  -v $(pwd)/config.yaml:/app/config.yaml:ro \
-  -v $(pwd)/logs:/app/logs \
-  -v ~/.aws:/home/cloudhawk/.aws:ro \
+  -v $(pwd)/config.yaml:/opt/cloudhawk/config.yaml:ro \
+  -v $(pwd)/logs:/opt/cloudhawk/logs \
+  -v ~/.aws:/opt/cloudhawk/config/aws:ro \
   cloudhawk
 ```
 
@@ -187,8 +205,32 @@ python src/cli/cloudhawk_cli.py alerts
 
 ## 🐳 Docker Configuration
 
-### Docker Compose
+### Pre-built Image Configuration
 ```yaml
+# docker-compose.prod.yml
+version: '3.8'
+services:
+  cloudhawk:
+    image: ghcr.io/vatshariyani/cloudhawk:latest
+    ports:
+      - "5000:5000"
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+    volumes:
+      - cloudhawk_logs:/opt/cloudhawk/logs
+      - cloudhawk_config:/opt/cloudhawk/config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+```
+
+### Build from Source Configuration
+```yaml
+# docker-compose.yml
 version: '3.8'
 services:
   cloudhawk:
@@ -196,14 +238,14 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - ./config.yaml:/app/config.yaml:ro
-      - ./logs:/app/logs
-      - ~/.aws:/home/cloudhawk/.aws:ro
+      - ./config.yaml:/opt/cloudhawk/config.yaml:ro
+      - ./logs:/opt/cloudhawk/logs
+      - ~/.aws:/opt/cloudhawk/config/aws:ro
     environment:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/v1/health"]
       interval: 30s
       timeout: 10s
       retries: 3

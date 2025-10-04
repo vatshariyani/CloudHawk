@@ -170,7 +170,7 @@ df -h
 ```bash
 # Check IAM permissions
 aws iam get-user
-aws iam list-attached-user-policies --user-name your-username
+aws iam list-attached-user-policies --user-name vatshariyani
 
 # Test specific permissions
 aws s3 ls

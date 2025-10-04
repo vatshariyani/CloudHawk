@@ -14,23 +14,26 @@ This FAQ addresses the most common questions about CloudHawk installation, confi
 
 ### Q: How do I install CloudHawk?
 **A:** There are several installation methods:
-```bash
-# Method 1: Docker (Recommended)
-git clone https://github.com/vatshariyani/cloudhawk.git
-cd cloudhawk
-docker-compose up -d
 
-# Method 2: Python installation
+#### Option 1: Pre-built Docker Image (Recommended)
+```bash
+# Clone and setup
 git clone https://github.com/vatshariyani/cloudhawk.git
 cd cloudhawk
-pip install -r requirements.txt
-python setup.py
+./scripts/docker-deploy.sh setup
+
+# Edit .env with your credentials
+nano .env
+
+# Start CloudHawk
+./scripts/docker-deploy.sh start
 ```
 
-### Q: Can I run CloudHawk in Docker?
-**A:** Yes! CloudHawk is fully containerized:
+#### Option 2: Build from Source
 ```bash
-# Quick start with Docker Compose
+# Docker Compose
+git clone https://github.com/vatshariyani/cloudhawk.git
+cd cloudhawk
 docker-compose up -d
 
 # Manual Docker build
@@ -38,11 +41,99 @@ docker build -t cloudhawk .
 docker run -d -p 5000:5000 cloudhawk
 ```
 
+#### Option 3: Python Installation
+```bash
+git clone https://github.com/vatshariyani/cloudhawk.git
+cd cloudhawk
+pip install -r requirements.txt
+python setup.py
+```
+
+### Q: Can I run CloudHawk in Docker?
+**A:** Yes! CloudHawk is fully containerized with multiple deployment options:
+
+#### Pre-built Image (Easiest)
+```bash
+# Setup and start
+./scripts/docker-deploy.sh setup
+./scripts/docker-deploy.sh start
+```
+
+#### Build from Source
+```bash
+# Docker Compose
+docker-compose up -d
+
+# Manual build
+docker build -t cloudhawk .
+docker run -d -p 5000:5000 cloudhawk
+```
+
+#### Production Deployment
+```bash
+# Use production compose file
+docker-compose -f docker-compose.prod.yml up -d
+```
+
 ### Q: What cloud providers does CloudHawk support?
 **A:** CloudHawk supports:
 - **AWS**: EC2, S3, IAM, CloudTrail, GuardDuty, VPC
 - **Azure**: Virtual Machines, Storage, Key Vault, Security Center
 - **GCP**: Compute Engine, Cloud Storage, IAM, Security Command Center
+
+### Q: How do I use the pre-built Docker image?
+**A:** The pre-built image is the easiest way to deploy CloudHawk:
+
+```bash
+# Setup CloudHawk
+./scripts/docker-deploy.sh setup
+
+# Edit .env file with your credentials
+nano .env
+
+# Start CloudHawk
+./scripts/docker-deploy.sh start
+
+# Access at http://localhost:5000
+```
+
+### Q: How do I update CloudHawk when using Docker?
+**A:** To update to the latest version:
+
+```bash
+# Pull latest image
+./scripts/docker-deploy.sh pull
+
+# Restart with new image
+./scripts/docker-deploy.sh restart
+
+# Or manually
+docker-compose -f docker-compose.prod.yml pull
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+### Q: How do I configure cloud credentials in Docker?
+**A:** You can provide credentials in several ways:
+
+#### Environment Variables (Recommended)
+```bash
+# In your .env file
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_DEFAULT_REGION=us-east-1
+```
+
+#### Credentials Files
+```bash
+# Mount credentials files
+docker run -v ~/.aws:/opt/cloudhawk/config/aws:ro cloudhawk
+```
+
+#### Docker Secrets
+```bash
+# Use Docker secrets for production
+echo "your_secret" | docker secret create aws_secret_key -
+```
 
 ## ⚙️ Configuration
 

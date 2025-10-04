@@ -11,11 +11,52 @@
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.8+ (for manual installation)
 - AWS CLI configured with appropriate permissions
-- Docker (optional, for containerized deployment)
+- Docker (recommended for easy deployment)
 
-### Installation
+### Option 1: Docker Deployment (Recommended)
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/vatshariyani/cloudhawk.git
+   cd cloudhawk
+   ```
+
+2. **Setup CloudHawk**
+   ```bash
+   # On Linux/macOS
+   ./scripts/docker-deploy.sh setup
+   
+   # On Windows
+   scripts\docker-deploy.bat setup
+   ```
+
+3. **Configure your environment**
+   Edit the `.env` file with your cloud provider credentials:
+   ```bash
+   # Update the repository name
+   GITHUB_REPOSITORY=vatshariyani/cloudhawk
+   
+   # Add your AWS credentials
+   AWS_ACCESS_KEY_ID=your_aws_access_key_id
+   AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
+   AWS_DEFAULT_REGION=us-east-1
+   ```
+
+4. **Start CloudHawk**
+   ```bash
+   # On Linux/macOS
+   ./scripts/docker-deploy.sh start
+   
+   # On Windows
+   scripts\docker-deploy.bat start
+   ```
+
+5. **Access the dashboard**
+   Open your browser and go to `http://localhost:5000`
+
+### Option 2: Manual Installation
 
 1. **Clone the repository**
    ```bash
@@ -38,7 +79,7 @@
    python test_security_detection.py
    ```
 
-### Docker Deployment
+### Docker Deployment (Build from Source)
 
 ```bash
 # Build and run with Docker Compose
@@ -46,6 +87,8 @@ docker-compose up -d
 
 # Access the web dashboard at http://localhost:5000
 ```
+
+For detailed Docker deployment instructions, see [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md) or the [Docker Deployment Guide](docs/Docker-Deployment.md).
 
 ## 🚀 Features
 
