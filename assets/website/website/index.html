@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO Meta Tags -->
+    <title>CloudHawk - Multi-Cloud Security Detection & Response Platform | AWS Azure GCP</title>
+    <meta name="description" content="Enterprise-grade multi-cloud security detection tool for AWS, Azure, and GCP. AI-powered threat detection, real-time monitoring, and automated response. Open source cloud security solution.">
+    <meta name="keywords" content="cloud security, multi-cloud security, AWS security, Azure security, GCP security, cloud threat detection, cloud security monitoring, cloud compliance, enterprise security, open source security">
+    <meta name="author" content="CloudHawk Team">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph Tags -->
+    <meta property="og:title" content="CloudHawk - Multi-Cloud Security Sentinel">
+    <meta property="og:description" content="Soar Above Cloud Security Threats. Enterprise-grade multi-cloud security detection for AWS, Azure, and GCP.">
+    <meta property="og:image" content="https://github.com/vatshariyani/cloudhawk/assets/cloudhawk-og-image.png">
+    <meta property="og:url" content="https://github.com/vatshariyani/cloudhawk">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="CloudHawk">
+    
+    <!-- Twitter Card Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="CloudHawk - Multi-Cloud Security Sentinel">
+    <meta name="twitter:description" content="Enterprise-grade multi-cloud security detection for AWS, Azure, and GCP.">
+    <meta name="twitter:image" content="https://github.com/vatshariyani/cloudhawk/assets/cloudhawk-twitter-card.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <style>
+        :root {
+            --primary-blue: #1E40AF;
+            --secondary-gray: #374151;
+            --accent-green: #10B981;
+            --warning-orange: #F59E0B;
+            --danger-red: #EF4444;
+            --background-white: #FFFFFF;
+            --background-dark: #111827;
+            --text-primary: #111827;
+            --text-secondary: #6B7280;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--background-white);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, #3B82F6 100%);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .header .tagline {
+            font-size: 1.25rem;
+            font-weight: 500;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        
+        .header .description {
+            font-size: 1.1rem;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+            opacity: 0.8;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .btn-primary {
+            background: var(--accent-green);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border-color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: white;
+            color: var(--primary-blue);
+        }
+        
+        /* Features Section */
+        .features {
+            padding: 4rem 0;
+            background: #F9FAFB;
+        }
+        
+        .features h2 {
+            text-align: center;
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: var(--text-primary);
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-4px);
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .feature-card h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        
+        .feature-card p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        
+        /* Cloud Providers */
+        .cloud-providers {
+            padding: 4rem 0;
+            background: white;
+        }
+        
+        .cloud-providers h2 {
+            text-align: center;
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: var(--text-primary);
+        }
+        
+        .providers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+        
+        .provider-card {
+            text-align: center;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 2px solid #E5E7EB;
+            transition: all 0.3s ease;
+        }
+        
+        .provider-card:hover {
+            border-color: var(--primary-blue);
+            transform: translateY(-2px);
+        }
+        
+        .provider-logo {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .provider-card h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        
+        /* Stats Section */
+        .stats {
+            padding: 4rem 0;
+            background: var(--primary-blue);
+            color: white;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            text-align: center;
+        }
+        
+        .stat-item h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-item p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        /* Footer */
+        .footer {
+            background: var(--background-dark);
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+        }
+        
+        .footer h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .footer p {
+            opacity: 0.8;
+            margin-bottom: 2rem;
+        }
+        
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .social-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.5rem;
+            transition: color 0.3s ease;
+        }
+        
+        .social-links a:hover {
+            color: var(--accent-green);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .header .tagline {
+                font-size: 1rem;
+            }
+            
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <h1>🦅 CloudHawk</h1>
+            <p class="tagline">Multi-Cloud Security Sentinel</p>
+            <p class="description">
+                Enterprise-grade multi-cloud security detection tool for AWS, Azure, and GCP. 
+                AI-powered threat detection, real-time monitoring, and automated response.
+            </p>
+            <div class="cta-buttons">
+                <a href="https://github.com/vatshariyani/cloudhawk" class="btn btn-primary">Get Started</a>
+                <a href="/docs" class="btn btn-secondary">Documentation</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="container">
+            <h2>Why Choose CloudHawk?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🛡️</div>
+                    <h3>Multi-Cloud Mastery</h3>
+                    <p>Unified security across AWS, Azure, and GCP with a single platform. No more juggling multiple security tools.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>AI-Powered Intelligence</h3>
+                    <p>Machine learning-driven threat detection that learns from your environment and adapts to new threats.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Real-Time Response</h3>
+                    <p>Sub-second threat detection and automated remediation to stop attacks before they cause damage.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🏢</div>
+                    <h3>Enterprise-Ready</h3>
+                    <p>Built for scale, security, and compliance. SOC 2, ISO 27001, and GDPR ready.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔧</div>
+                    <h3>Developer-Friendly</h3>
+                    <p>Easy integration, comprehensive APIs, Docker support, and extensive documentation.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Open Source</h3>
+                    <p>Transparent, customizable, and community-driven. No vendor lock-in, full control over your security.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Cloud Providers Section -->
+    <section class="cloud-providers">
+        <div class="container">
+            <h2>Multi-Cloud Security Coverage</h2>
+            <div class="providers-grid">
+                <div class="provider-card">
+                    <div class="provider-logo">☁️</div>
+                    <h3>AWS Security</h3>
+                    <p>Comprehensive AWS security monitoring including EC2, S3, IAM, VPC, and more.</p>
+                </div>
+                <div class="provider-card">
+                    <div class="provider-logo">🔵</div>
+                    <h3>Azure Security</h3>
+                    <p>Complete Azure security coverage including Azure AD, Key Vault, Storage, and Compute.</p>
+                </div>
+                <div class="provider-card">
+                    <div class="provider-logo">🌐</div>
+                    <h3>GCP Security</h3>
+                    <p>Full Google Cloud Platform security monitoring including IAM, Storage, Compute Engine, and more.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <h3>99.9%</h3>
+                    <p>Uptime Guarantee</p>
+                </div>
+                <div class="stat-item">
+                    <h3>&lt;1s</h3>
+                    <p>Threat Detection</p>
+                </div>
+                <div class="stat-item">
+                    <h3>3</h3>
+                    <p>Cloud Platforms</p>
+                </div>
+                <div class="stat-item">
+                    <h3>24/7</h3>
+                    <p>Security Monitoring</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <h3>🦅 CloudHawk</h3>
+            <p>Soar Above Cloud Security Threats</p>
+            <div class="social-links">
+                <a href="https://github.com/vatshariyani/cloudhawk">GitHub</a>
+                <a href="https://linkedin.com/company/cloudhawk">LinkedIn</a>
+                <a href="https://twitter.com/cloudhawksec">Twitter</a>
+                <a href="https://discord.gg/cloudhawk">Discord</a>
+            </div>
+            <p>&copy; 2024 CloudHawk. All rights reserved. | MIT License</p>
+        </div>
+    </footer>
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "CloudHawk",
+        "description": "Multi-cloud security detection and response platform for AWS, Azure, and GCP",
+        "url": "https://github.com/vatshariyani/cloudhawk",
+        "applicationCategory": "SecurityApplication",
+        "operatingSystem": ["Linux", "Windows", "macOS"],
+        "programmingLanguage": "Python",
+        "license": "MIT",
+        "author": {
+            "@type": "Organization",
+            "name": "CloudHawk Team"
+        },
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "featureList": [
+            "Multi-cloud security monitoring",
+            "AI-powered threat detection",
+            "Real-time security alerts",
+            "Automated response",
+            "Compliance reporting",
+            "Docker deployment"
+        ]
+    }
+    </script>
+</body>
+</html>

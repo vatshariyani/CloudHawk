@@ -81,8 +81,8 @@ pull_image() {
 create_env_file() {
     if [ ! -f ".env" ]; then
         print_status "Creating .env file from template..."
-        if [ -f "env.example" ]; then
-            cp env.example .env
+        if [ -f "config/env.example" ]; then
+            cp config/env.example .env
             print_success "Created .env file. Please edit it with your configuration."
             print_warning "You need to update the GITHUB_REPOSITORY variable in .env with your actual repository."
         else

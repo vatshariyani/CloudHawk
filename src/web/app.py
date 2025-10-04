@@ -48,7 +48,7 @@ app.register_blueprint(swagger_bp)
 
 # Configuration
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-CONFIG_FILE = os.path.join(BASE_DIR, 'config.yaml')
+CONFIG_FILE = os.path.join(BASE_DIR, 'config', 'config.yaml')
 ALERTS_FILE = os.path.join(BASE_DIR, 'src', 'alerts', 'alerts.json')
 RULES_FILE = os.path.join(BASE_DIR, 'src', 'detection', 'security_rules.yaml')
 

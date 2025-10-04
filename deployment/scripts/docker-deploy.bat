@@ -79,8 +79,8 @@ REM Function to create environment file
 :create_env_file
 if not exist ".env" (
     call :print_status "Creating .env file from template..."
-    if exist "env.example" (
-        copy env.example .env >nul
+    if exist "config\env.example" (
+        copy config\env.example .env >nul
         call :print_success "Created .env file. Please edit it with your configuration."
         call :print_warning "You need to update the GITHUB_REPOSITORY variable in .env with your actual repository."
     ) else (

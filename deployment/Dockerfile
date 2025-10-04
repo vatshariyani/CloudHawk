@@ -57,7 +57,7 @@ RUN mkdir -p $CLOUDHAWK_HOME/logs \
 COPY src/ $CLOUDHAWK_HOME/src/
 COPY tests/ $CLOUDHAWK_HOME/tests/
 COPY docs/ $CLOUDHAWK_HOME/docs/
-COPY config.yaml $CLOUDHAWK_HOME/
+COPY config/ $CLOUDHAWK_HOME/config/
 COPY setup.py $CLOUDHAWK_HOME/
 COPY run_cloudhawk.py $CLOUDHAWK_HOME/
 COPY README.md $CLOUDHAWK_HOME/

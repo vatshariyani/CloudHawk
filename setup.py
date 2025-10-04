@@ -47,7 +47,7 @@ def install_dependencies():
 
 def setup_config():
     """Setup configuration file"""
-    config_file = "config.yaml"
+    config_file = "config/config.yaml"
     if not os.path.exists(config_file):
         print("📝 Creating default configuration file...")
         default_config = """# CloudHawk Configuration File
@@ -196,7 +196,7 @@ def run_tests():
     # Test configuration loading
     try:
         import yaml
-        with open('config.yaml', 'r') as f:
+        with open('config/config.yaml', 'r') as f:
             config = yaml.safe_load(f)
         print("✅ Configuration file loads successfully")
     except Exception as e:

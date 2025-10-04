@@ -1,11 +1,22 @@
-# 🦅 CloudHawk
+# 🦅 CloudHawk - Multi-Cloud Security Sentinel
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![AWS](https://img.shields.io/badge/AWS-FF9900?logo=amazon-aws&logoColor=white)](https://aws.amazon.com/)
-[![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
+[![Security](https://img.shields.io/badge/security-enterprise--grade-green.svg)](https://github.com/vatshariyani/cloudhawk)
+[![Multi-Cloud](https://img.shields.io/badge/multi--cloud-AWS%20%7C%20Azure%20%7C%20GCP-orange.svg)](https://github.com/vatshariyani/cloudhawk)
 
-**CloudHawk** is an open-source Cloud Security Monitoring Tool that scans AWS infrastructure to detect security misconfigurations, compliance violations, and potential threats. Built for security teams who need comprehensive cloud security monitoring without the complexity of enterprise solutions.
+> **Soar Above Cloud Security Threats** - The Ultimate Multi-Cloud Security Detection & Response Platform
+
+**CloudHawk** is the industry's most comprehensive **multi-cloud security detection tool**, engineered to identify, analyze, and respond to security threats across **AWS**, **Azure**, and **Google Cloud Platform (GCP)** with unmatched precision and intelligence.
+
+## 🎯 **Why CloudHawk?**
+
+- **🛡️ Multi-Cloud Mastery**: Unified security across AWS, Azure, and GCP
+- **🤖 AI-Powered Intelligence**: Machine learning-driven threat detection
+- **⚡ Real-Time Response**: Sub-second threat detection and automated remediation
+- **🏢 Enterprise-Ready**: Built for scale, security, and compliance
+- **🔧 Developer-Friendly**: Easy integration, comprehensive APIs, and Docker support
 
 ## 🚀 Quick Start
 

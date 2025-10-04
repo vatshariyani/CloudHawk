@@ -1,6 +1,16 @@
-# 🦅 CloudHawk Wiki
+# 🦅 CloudHawk - Multi-Cloud Security Sentinel
 
-Welcome to the CloudHawk Wiki! This comprehensive documentation will help you get started with CloudHawk, configure it for your environment, and make the most of its powerful cloud security monitoring capabilities.
+> **Soar Above Cloud Security Threats** - The Ultimate Multi-Cloud Security Detection & Response Platform
+
+Welcome to the **CloudHawk Documentation**! This comprehensive guide will help you master the industry's most advanced multi-cloud security detection platform, designed to protect your AWS, Azure, and GCP infrastructure with unmatched precision and intelligence.
+
+## 🎯 **Why CloudHawk?**
+
+- **🛡️ Multi-Cloud Mastery**: Unified security across AWS, Azure, and GCP
+- **🤖 AI-Powered Intelligence**: Machine learning-driven threat detection
+- **⚡ Real-Time Response**: Sub-second threat detection and automated remediation
+- **🏢 Enterprise-Ready**: Built for scale, security, and compliance
+- **🔧 Developer-Friendly**: Easy integration, comprehensive APIs, and Docker support
 
 ## 📚 Table of Contents
 
@@ -9,6 +19,11 @@ Welcome to the CloudHawk Wiki! This comprehensive documentation will help you ge
 - [Quick Start](Quick-Start.md) - Get up and running in minutes
 - [Configuration](Configuration.md) - Configure CloudHawk for your environment
 - [Docker Deployment](Docker-Deployment.md) - Containerized deployment with pre-built images
+
+### 🎨 Branding & Marketing
+- [Brand Identity](branding/BRAND_IDENTITY.md) - Complete brand guidelines and visual identity
+- [Marketing Materials](marketing/MARKETING_MATERIALS.md) - Social media assets and content strategy
+- [SEO Optimization](seo/SEO_OPTIMIZATION.md) - Search engine optimization strategy
 
 ### ☁️ Cloud Provider Setup
 - [AWS Setup](AWS-Setup.md) - Configure AWS monitoring

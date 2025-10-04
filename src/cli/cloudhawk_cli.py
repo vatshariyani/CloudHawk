@@ -33,7 +33,7 @@ class CloudHawkCLI:
     
     def __init__(self):
         self.base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        self.config_file = os.path.join(self.base_dir, 'config.yaml')
+        self.config_file = os.path.join(self.base_dir, 'config', 'config.yaml')
         self.alerts_file = os.path.join(self.base_dir, 'src', 'alerts', 'alerts.json')
         self.rules_file = os.path.join(self.base_dir, 'src', 'detection', 'security_rules.yaml')
         
