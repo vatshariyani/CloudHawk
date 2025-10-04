@@ -60,7 +60,8 @@ jobs:
 
     - name: Generate artifact attestation
       uses: actions/attest-build-provenance@v1
+      if: success()
       with:
         subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
-        subject-digest: ${{ steps.build.outputs.digest }}
         push-to-registry: true
+      continue-on-error: true
