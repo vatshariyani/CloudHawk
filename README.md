@@ -429,7 +429,7 @@ docker-compose up -d
 #### **Option 2: Manual Docker Build**
 ```bash
 # Build the image
-docker build -t cloudhawk .
+docker build -f deployment/Dockerfile -t cloudhawk .
 
 # Run with configuration
 docker run -d \

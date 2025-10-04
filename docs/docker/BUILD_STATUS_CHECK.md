@@ -76,7 +76,7 @@ docker run -p 5000:5000 \
 #### 1. **Dockerfile Syntax Error**
 - Check the Actions logs for specific error messages
 - Verify Dockerfile syntax
-- Test locally with: `docker build -t test .`
+- Test locally with: `docker build -f deployment/Dockerfile -t test .`
 
 #### 2. **Permission Issues**
 - Ensure GitHub Actions has proper permissions
@@ -90,7 +90,7 @@ docker run -p 5000:5000 \
 ### Debug Commands:
 ```bash
 # Test Docker build locally
-docker build -t cloudhawk:test .
+docker build -f deployment/Dockerfile -t cloudhawk:test .
 
 # Check image size
 docker images cloudhawk:test

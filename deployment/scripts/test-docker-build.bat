@@ -37,7 +37,7 @@ set IMAGE_NAME=cloudhawk:test
 call :print_status "Testing Docker build..."
 
 REM Build the image
-docker build -t %IMAGE_NAME% .
+docker build -f deployment/Dockerfile -t %IMAGE_NAME% .
 if errorlevel 1 (
     call :print_error "Docker build failed"
     exit /b 1
@@ -90,7 +90,7 @@ echo.
 echo If you want to build and push manually:
 echo.
 echo 1. Build the image:
-echo    docker build -t ghcr.io/vatshariyani/cloudhawk:latest .
+echo    docker build -f deployment/Dockerfile -t ghcr.io/vatshariyani/cloudhawk:latest .
 echo.
 echo 2. Login to GitHub Container Registry:
 echo    echo %GITHUB_TOKEN% | docker login ghcr.io -u vatshariyani --password-stdin

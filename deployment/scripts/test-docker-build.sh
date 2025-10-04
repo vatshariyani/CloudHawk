@@ -44,7 +44,7 @@ test_docker_build() {
     print_status "Testing Docker build..."
     
     # Build the image
-    if docker build -t "$image_name" .; then
+    if docker build -f deployment/Dockerfile -t "$image_name" .; then
         print_success "Docker build completed successfully"
     else
         print_error "Docker build failed"
@@ -97,7 +97,7 @@ show_manual_build() {
     echo "If you want to build and push manually:"
     echo ""
     echo "1. Build the image:"
-    echo "   docker build -t ghcr.io/vatshariyani/cloudhawk:latest ."
+    echo "   docker build -f deployment/Dockerfile -t ghcr.io/vatshariyani/cloudhawk:latest ."
     echo ""
     echo "2. Login to GitHub Container Registry:"
     echo "   echo \$GITHUB_TOKEN | docker login ghcr.io -u vatshariyani --password-stdin"

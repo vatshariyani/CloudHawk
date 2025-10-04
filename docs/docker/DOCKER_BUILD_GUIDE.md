@@ -32,7 +32,7 @@ If you prefer to build and push manually:
 
 1. **Build the image:**
    ```bash
-   docker build -t ghcr.io/vatshariyani/cloudhawk:latest .
+   docker build -f deployment/Dockerfile -t ghcr.io/vatshariyani/cloudhawk:latest .
    ```
 
 2. **Login to GitHub Container Registry:**
@@ -64,7 +64,7 @@ scripts\test-docker-build.bat
 #### Manual Testing:
 ```bash
 # Build the image
-docker build -t cloudhawk:test .
+docker build -f deployment/Dockerfile -t cloudhawk:test .
 
 # Test the image
 docker run --rm cloudhawk:test python -c "import sys; print('Python version:', sys.version)"
@@ -193,7 +193,7 @@ docker rmi ghcr.io/vatshariyani/cloudhawk:old-tag
 docker info
 
 # Check Dockerfile syntax
-docker build --no-cache -t test .
+docker build -f deployment/Dockerfile --no-cache -t test .
 
 # Check GitHub Actions logs
 # Go to Actions tab in GitHub repository

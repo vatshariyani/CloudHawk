@@ -35,7 +35,7 @@ git clone https://github.com/vatshariyani/cloudhawk.git
 cd cloudhawk
 
 # Build the image
-docker build -t cloudhawk:latest .
+docker build -f deployment/Dockerfile -t cloudhawk:latest .
 
 # Start with Docker Compose
 docker-compose up -d

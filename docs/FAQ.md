@@ -37,7 +37,7 @@ cd cloudhawk
 docker-compose up -d
 
 # Manual Docker build
-docker build -t cloudhawk .
+docker build -f deployment/Dockerfile -t cloudhawk .
 docker run -d -p 5000:5000 cloudhawk
 ```
 
@@ -65,7 +65,7 @@ python setup.py
 docker-compose up -d
 
 # Manual build
-docker build -t cloudhawk .
+docker build -f deployment/Dockerfile -t cloudhawk .
 docker run -d -p 5000:5000 cloudhawk
 ```
 

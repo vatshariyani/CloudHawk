@@ -58,7 +58,7 @@ REM Build CloudHawk image
 :build_image
 echo %INFO% Building CloudHawk Docker image...
 cd /d "%PROJECT_DIR%"
-docker build -t %CLOUDHAWK_IMAGE% .
+docker build -f deployment/Dockerfile -t %CLOUDHAWK_IMAGE% .
 if errorlevel 1 (
     echo %ERROR% Failed to build Docker image
     pause

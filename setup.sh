@@ -84,7 +84,7 @@ create_directories() {
 # Build Docker image
 build_image() {
     print_status "Building CloudHawk Docker image..."
-    docker build -t $CLOUDHAWK_IMAGE .
+    docker build -f deployment/Dockerfile -t $CLOUDHAWK_IMAGE .
     print_status "Docker image built successfully ✓"
 }
 
