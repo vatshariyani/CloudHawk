@@ -8,6 +8,8 @@ Provides commands for scanning, detection, alerting, and management.
 
 Usage:
     cloudhawk scan aws --region us-east-1
+    cloudhawk scan gcp --project-id my-project
+    cloudhawk scan azure --subscription-id 00000000-0000-0000-0000-000000000000
     cloudhawk detect --rules custom-rules.yaml
     cloudhawk alerts --severity CRITICAL
     cloudhawk config --show
@@ -160,10 +162,14 @@ class CloudHawkCLI:
             print(f"Events collected: {len(events)}")
 
             import json, datetime, os
-            ts = datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-            logs_dir = os.path.join(self.base_dir, "logs")
-            os.makedirs(logs_dir, exist_ok=True)
-            out_path = os.path.join(logs_dir, f"gcp_events_{ts}.json")
+            if getattr(args, 'output', None):
+                out_path = args.output
+                os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+            else:
+                ts = datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+                logs_dir = os.path.join(self.base_dir, "logs")
+                os.makedirs(logs_dir, exist_ok=True)
+                out_path = os.path.join(logs_dir, f"gcp_events_{ts}.json")
             with open(out_path, "w") as fh:
                 json.dump(events, fh, indent=2, default=str)
             print(f"Events saved to: {out_path}")
@@ -191,10 +197,14 @@ class CloudHawkCLI:
             print(f"Events collected: {len(events)}")
 
             import json, datetime, os
-            ts = datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-            logs_dir = os.path.join(self.base_dir, "logs")
-            os.makedirs(logs_dir, exist_ok=True)
-            out_path = os.path.join(logs_dir, f"azure_events_{ts}.json")
+            if getattr(args, 'output', None):
+                out_path = args.output
+                os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+            else:
+                ts = datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+                logs_dir = os.path.join(self.base_dir, "logs")
+                os.makedirs(logs_dir, exist_ok=True)
+                out_path = os.path.join(logs_dir, f"azure_events_{ts}.json")
             with open(out_path, "w") as fh:
                 json.dump(events, fh, indent=2, default=str)
             print(f"Events saved to: {out_path}")
@@ -369,6 +379,8 @@ def main():
         epilog="""
 Examples:
   cloudhawk scan aws --region us-east-1
+  cloudhawk scan gcp --project-id my-project --hours-back 48
+  cloudhawk scan azure --subscription-id <sub-id> --output events.json
   cloudhawk detect --events events.json --rules rules.yaml
   cloudhawk alerts --severity CRITICAL --limit 10
   cloudhawk config --show
@@ -405,12 +417,15 @@ Examples:
     gcp_scan_parser.add_argument('--project-id', required=True, help='GCP project ID')
     gcp_scan_parser.add_argument('--max-events', type=int, default=1000, help='Max audit log entries')
     gcp_scan_parser.add_argument('--hours-back', type=int, default=24, help='Hours of audit log history to fetch')
+    gcp_scan_parser.add_argument('--output', default=None, help='Path to write events JSON (default: logs/gcp_events_<ts>.json)')
 
     # Azure scan
     azure_scan_parser = scan_subparsers.add_parser('azure', help='Scan Azure infrastructure')
     azure_scan_parser.add_argument('--subscription-id', required=True, help='Azure subscription ID')
     azure_scan_parser.add_argument('--max-events', type=int, default=1000, help='Max events per collector')
     azure_scan_parser.add_argument('--hours-back', type=int, default=24, help='Hours of Activity Log history to fetch')
+    azure_scan_parser.add_argument('--output', default=None, help='Path to write events JSON (default: logs/azure_events_<ts>.json)')
+
 
     # Detect command
     detect_parser = subparsers.add_parser('detect', help='Run detection on existing events')
