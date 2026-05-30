@@ -13,7 +13,12 @@ aws:
     - guardduty
 
 azure:
-  subscription_id: ""       # override with AZURE_SUBSCRIPTION_ID env var
+  subscription_id: ""       # env: AZURE_SUBSCRIPTION_ID
+  tenant_id: ""             # env: AZURE_TENANT_ID       (service principal auth)
+  client_id: ""             # env: AZURE_CLIENT_ID       (service principal auth)
+  client_secret: ""         # env: AZURE_CLIENT_SECRET   (service principal auth)
+                            # omit all three to use DefaultAzureCredential (az login / managed identity)
+  hours_back: 24
   max_events_per_service: 1000
   services:
     - storage
@@ -23,7 +28,10 @@ azure:
     - activity_log
 
 gcp:
-  project_id: ""            # override with GOOGLE_CLOUD_PROJECT env var
+  project_id: ""            # env: GOOGLE_CLOUD_PROJECT
+  credentials_path: ""      # env: GOOGLE_APPLICATION_CREDENTIALS (path to service-account JSON)
+                            # omit to use Application Default Credentials (gcloud auth application-default login)
+  hours_back: 24
   max_events_per_service: 1000
   services:
     - iam

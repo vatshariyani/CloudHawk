@@ -30,12 +30,18 @@ _DEFAULTS: Dict[str, Any] = {
         "services": ["ec2", "s3", "iam", "cloudtrail", "guardduty"],
     },
     "azure": {
-        "subscription_id": "",
+        "subscription_id": "",   # AZURE_SUBSCRIPTION_ID
+        "tenant_id": "",         # AZURE_TENANT_ID
+        "client_id": "",         # AZURE_CLIENT_ID
+        "client_secret": "",     # AZURE_CLIENT_SECRET
+        "hours_back": 24,
         "max_events_per_service": 1000,
         "services": ["storage", "vm", "keyvault", "security_center", "activity_log"],
     },
     "gcp": {
-        "project_id": "",
+        "project_id": "",        # GOOGLE_CLOUD_PROJECT
+        "credentials_path": "",  # GOOGLE_APPLICATION_CREDENTIALS
+        "hours_back": 24,
         "max_events_per_service": 1000,
         "services": ["iam", "storage", "compute", "logging"],
     },
@@ -90,12 +96,22 @@ def _apply_env_overrides(cfg: Dict) -> Dict:
         overrides.setdefault("aws", {})["default_region"] = os.environ["AWS_DEFAULT_REGION"]
 
     # Azure
-    if os.environ.get("AZURE_SUBSCRIPTION_ID"):
-        overrides.setdefault("azure", {})["subscription_id"] = os.environ["AZURE_SUBSCRIPTION_ID"]
+    for env_var, cfg_key in [
+        ("AZURE_SUBSCRIPTION_ID", "subscription_id"),
+        ("AZURE_TENANT_ID", "tenant_id"),
+        ("AZURE_CLIENT_ID", "client_id"),
+        ("AZURE_CLIENT_SECRET", "client_secret"),
+    ]:
+        if os.environ.get(env_var):
+            overrides.setdefault("azure", {})[cfg_key] = os.environ[env_var]
 
     # GCP
-    if os.environ.get("GOOGLE_CLOUD_PROJECT"):
-        overrides.setdefault("gcp", {})["project_id"] = os.environ["GOOGLE_CLOUD_PROJECT"]
+    for env_var, cfg_key in [
+        ("GOOGLE_CLOUD_PROJECT", "project_id"),
+        ("GOOGLE_APPLICATION_CREDENTIALS", "credentials_path"),
+    ]:
+        if os.environ.get(env_var):
+            overrides.setdefault("gcp", {})[cfg_key] = os.environ[env_var]
 
     # Web
     if os.environ.get("CLOUDHAWK_PORT"):
