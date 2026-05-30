@@ -28,6 +28,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from config import get_config, get as cfg_get
 from collector.aws_collector import AWSCollector
 from collector.gcp_collector import GCPCollector
+from collector.azure_collector import AzureCollector
 from detection.rule_engine import RuleEngine
 
 class CloudHawkCLI:
@@ -169,6 +170,37 @@ class CloudHawkCLI:
             return 0
         except Exception as exc:
             self.logger.error("GCP scan failed: %s", exc)
+            print(f"Error: {exc}")
+            return 1
+
+    def scan_azure(self, args):
+        """Scan Azure infrastructure for security issues"""
+        self.print_banner()
+        print(f"Scanning Azure subscription: {args.subscription_id}")
+
+        config = dict(self.config)
+        config["azure"] = dict(config.get("azure", {}))
+        config["azure"]["subscription_id"] = args.subscription_id
+        config["azure"]["max_events_per_service"] = args.max_events
+        config["azure"]["hours_back"] = args.hours_back
+
+        try:
+            collector = AzureCollector(config)
+            print("Collecting Azure security events...")
+            events = collector.collect_all()
+            print(f"Events collected: {len(events)}")
+
+            import json, datetime, os
+            ts = datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            logs_dir = os.path.join(self.base_dir, "logs")
+            os.makedirs(logs_dir, exist_ok=True)
+            out_path = os.path.join(logs_dir, f"azure_events_{ts}.json")
+            with open(out_path, "w") as fh:
+                json.dump(events, fh, indent=2, default=str)
+            print(f"Events saved to: {out_path}")
+            return 0
+        except Exception as exc:
+            self.logger.error("Azure scan failed: %s", exc)
             print(f"Error: {exc}")
             return 1
 
@@ -374,6 +406,12 @@ Examples:
     gcp_scan_parser.add_argument('--max-events', type=int, default=1000, help='Max audit log entries')
     gcp_scan_parser.add_argument('--hours-back', type=int, default=24, help='Hours of audit log history to fetch')
 
+    # Azure scan
+    azure_scan_parser = scan_subparsers.add_parser('azure', help='Scan Azure infrastructure')
+    azure_scan_parser.add_argument('--subscription-id', required=True, help='Azure subscription ID')
+    azure_scan_parser.add_argument('--max-events', type=int, default=1000, help='Max events per collector')
+    azure_scan_parser.add_argument('--hours-back', type=int, default=24, help='Hours of Activity Log history to fetch')
+
     # Detect command
     detect_parser = subparsers.add_parser('detect', help='Run detection on existing events')
     detect_parser.add_argument('--events', required=True, help='Path to events JSON file')
@@ -420,8 +458,10 @@ Examples:
             return cli.scan_aws(args)
         elif args.provider == 'gcp':
             return cli.scan_gcp(args)
+        elif args.provider == 'azure':
+            return cli.scan_azure(args)
         else:
-            parser.error("Please specify a cloud provider (aws, gcp)")
+            parser.error("Please specify a cloud provider (aws, gcp, azure)")
     
     elif args.command == 'detect':
         if not args.rules:
