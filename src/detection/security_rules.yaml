@@ -581,3 +581,186 @@ rules:
     condition: source == "GCP_ASSET_INVENTORY" and event_type == "NO_LABELS"
     severity: LOW
     remediation: "Add labels to Cloud Assets for better organization and governance"
+
+  #######################################
+  # GCP Audit Log Rules (5)
+  # Events emitted by GCPCollector.collect_logs()
+  # source == "GCP_AUDIT_LOG"
+  # A09: logging & monitoring | A01: access control
+  #######################################
+  - id: GCP-AUDIT-001
+    title: GCP IAM policy modified
+    description: Cloud Audit Log detected an IAM policy change
+    service: GCP_AUDIT_LOG
+    owasp: "A01:2021 Broken Access Control"
+    condition: source == "GCP_AUDIT_LOG" and event_type == "google.iam.v1.IAMPolicy.SetIamPolicy"
+    severity: HIGH
+    remediation: "Review the IAM policy change and verify it follows least-privilege"
+
+  - id: GCP-AUDIT-002
+    title: GCP bucket created or modified
+    description: Cloud Audit Log detected a GCS bucket creation or update
+    service: GCP_AUDIT_LOG
+    owasp: "A05:2021 Security Misconfiguration"
+    condition: source == "GCP_AUDIT_LOG" and event_type in "storage.buckets.create, storage.buckets.update"
+    severity: MEDIUM
+    remediation: "Verify new bucket settings — confirm encryption, versioning, and access control"
+
+  - id: GCP-AUDIT-003
+    title: GCP service account deleted
+    description: Cloud Audit Log detected service account deletion
+    service: GCP_AUDIT_LOG
+    owasp: "A09:2021 Security Logging and Monitoring Failures"
+    condition: source == "GCP_AUDIT_LOG" and event_type == "iam.serviceAccounts.delete"
+    severity: HIGH
+    remediation: "Verify the deletion was authorised; check for workloads that depended on this service account"
+
+  - id: GCP-AUDIT-004
+    title: GCP compute instance deleted
+    description: Cloud Audit Log detected a compute instance deletion
+    service: GCP_AUDIT_LOG
+    owasp: "A09:2021 Security Logging and Monitoring Failures"
+    condition: source == "GCP_AUDIT_LOG" and event_type == "compute.instances.delete"
+    severity: MEDIUM
+    remediation: "Confirm the deletion was planned and authorised"
+
+  - id: GCP-AUDIT-005
+    title: GCP critical or error severity audit event
+    description: Cloud Audit Log entry with severity CRITICAL or HIGH
+    service: GCP_AUDIT_LOG
+    owasp: "A09:2021 Security Logging and Monitoring Failures"
+    condition: source == "GCP_AUDIT_LOG" and severity in "CRITICAL, HIGH"
+    severity: HIGH
+    remediation: "Investigate the high-severity audit log entry immediately"
+
+  #######################################
+  # GCP Storage Posture Rules (3)
+  # Events emitted by GCPCollector.collect_storage_security()
+  # source == "GCP_STORAGE"
+  # A01: access control | A02: crypto | A05: misconfiguration
+  #######################################
+  - id: GCP-STOR-001
+    title: GCP bucket public access (IAM)
+    description: Cloud Storage bucket grants access to allUsers or allAuthenticatedUsers
+    service: GCP_STORAGE
+    owasp: "A01:2021 Broken Access Control"
+    condition: source == "GCP_STORAGE" and event_type == "PUBLIC_BUCKET_ACCESS"
+    severity: CRITICAL
+    remediation: "Remove allUsers / allAuthenticatedUsers bindings from the bucket IAM policy"
+
+  - id: GCP-STOR-002
+    title: GCP bucket no customer-managed encryption key
+    description: Cloud Storage bucket is not encrypted with a CMEK
+    service: GCP_STORAGE
+    owasp: "A02:2021 Cryptographic Failures"
+    condition: source == "GCP_STORAGE" and event_type == "BUCKET_NO_CMEK"
+    severity: MEDIUM
+    remediation: "Configure a Cloud KMS customer-managed encryption key for the bucket"
+
+  - id: GCP-STOR-003
+    title: GCP bucket versioning disabled
+    description: Cloud Storage bucket has versioning turned off
+    service: GCP_STORAGE
+    owasp: "A05:2021 Security Misconfiguration"
+    condition: source == "GCP_STORAGE" and event_type == "BUCKET_VERSIONING_DISABLED"
+    severity: LOW
+    remediation: "Enable object versioning to protect against accidental deletion and overwrites"
+
+  #######################################
+  # Azure Activity Log Rules (4)
+  # Events emitted by AzureCollector.collect_activity_logs()
+  # source == "AZURE_ACTIVITY_LOG"
+  # A09: logging & monitoring | A01: access control
+  #######################################
+  - id: AZURE-ACT-001
+    title: Azure critical activity log event
+    description: Activity Log entry at Critical severity
+    service: AZURE_ACTIVITY_LOG
+    owasp: "A09:2021 Security Logging and Monitoring Failures"
+    condition: source == "AZURE_ACTIVITY_LOG" and severity == "CRITICAL"
+    severity: CRITICAL
+    remediation: "Investigate the critical activity log entry immediately"
+
+  - id: AZURE-ACT-002
+    title: Azure role assignment created
+    description: Activity Log detected a new role assignment
+    service: AZURE_ACTIVITY_LOG
+    owasp: "A01:2021 Broken Access Control"
+    condition: source == "AZURE_ACTIVITY_LOG" and event_type == "Microsoft.Authorization/roleAssignments/write"
+    severity: HIGH
+    remediation: "Review the new role assignment and confirm it follows least-privilege"
+
+  - id: AZURE-ACT-003
+    title: Azure Key Vault operation
+    description: Activity Log detected a Key Vault write or delete operation
+    service: AZURE_ACTIVITY_LOG
+    owasp: "A02:2021 Cryptographic Failures"
+    condition: source == "AZURE_ACTIVITY_LOG" and event_type in "Microsoft.KeyVault/vaults/write, Microsoft.KeyVault/vaults/delete"
+    severity: HIGH
+    remediation: "Verify Key Vault changes are authorised and that soft-delete is enabled"
+
+  - id: AZURE-ACT-004
+    title: Azure network security group modified
+    description: Activity Log detected a Network Security Group rule change
+    service: AZURE_ACTIVITY_LOG
+    owasp: "A05:2021 Security Misconfiguration"
+    condition: source == "AZURE_ACTIVITY_LOG" and event_type == "Microsoft.Network/networkSecurityGroups/write"
+    severity: MEDIUM
+    remediation: "Review NSG rule changes to ensure no overly-permissive rules were added"
+
+  #######################################
+  # Azure Security Center Alert Rules (2)
+  # Events emitted by AzureCollector.collect_security_alerts()
+  # source == "AZURE_SECURITY_CENTER"
+  # A09: logging & monitoring
+  #######################################
+  - id: AZURE-SEC-001
+    title: Azure Defender critical security alert
+    description: Defender for Cloud raised a critical security alert
+    service: AZURE_SECURITY_CENTER
+    owasp: "A09:2021 Security Logging and Monitoring Failures"
+    condition: source == "AZURE_SECURITY_CENTER" and event_type == "SECURITY_ALERT" and severity == "CRITICAL"
+    severity: CRITICAL
+    remediation: "Investigate and contain the threat immediately; follow the alert's remediation steps"
+
+  - id: AZURE-SEC-002
+    title: Azure Defender high security alert
+    description: Defender for Cloud raised a high severity security alert
+    service: AZURE_SECURITY_CENTER
+    owasp: "A09:2021 Security Logging and Monitoring Failures"
+    condition: source == "AZURE_SECURITY_CENTER" and event_type == "SECURITY_ALERT" and severity == "HIGH"
+    severity: HIGH
+    remediation: "Investigate the alert and apply the recommended remediation steps"
+
+  #######################################
+  # Azure Storage Posture Rules (3)
+  # Events emitted by AzureCollector.collect_storage_security()
+  # source == "AZURE_STORAGE"
+  # A02: crypto | A01: access control
+  #######################################
+  - id: AZURE-STOR-001
+    title: Azure Storage allows HTTP traffic
+    description: Storage account does not enforce HTTPS-only connections
+    service: AZURE_STORAGE
+    owasp: "A02:2021 Cryptographic Failures"
+    condition: source == "AZURE_STORAGE" and event_type == "STORAGE_HTTP_ALLOWED"
+    severity: HIGH
+    remediation: "Set 'Require secure transfer' (enable_https_traffic_only) on the storage account"
+
+  - id: AZURE-STOR-002
+    title: Azure Storage public blob access enabled
+    description: Storage account allows anonymous public read access to blobs
+    service: AZURE_STORAGE
+    owasp: "A01:2021 Broken Access Control"
+    condition: source == "AZURE_STORAGE" and event_type == "STORAGE_PUBLIC_BLOB_ACCESS"
+    severity: CRITICAL
+    remediation: "Disable allow_blob_public_access on the storage account"
+
+  - id: AZURE-STOR-003
+    title: Azure Storage no encryption configuration
+    description: Storage account has no encryption object configured
+    service: AZURE_STORAGE
+    owasp: "A02:2021 Cryptographic Failures"
+    condition: source == "AZURE_STORAGE" and event_type == "STORAGE_NO_ENCRYPTION"
+    severity: MEDIUM
+    remediation: "Enable encryption at rest for the storage account"
