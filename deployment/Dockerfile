@@ -1,108 +1,89 @@
-# CloudHawk Multi-Cloud Security Monitoring Tool
-# Production-ready Docker image with all enhanced features
+# CloudHawk — Multi-Cloud Security Monitoring Tool
+# Multi-stage build: builder installs deps, production stage runs the app.
 
-FROM python:3.11-slim as builder
+# ── Builder ────────────────────────────────────────────────────────────────
+FROM python:3.11-slim AS builder
 
-# Set environment variables for build
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PIP_NO_CACHE_DIR=1
-ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    gcc \
-    g++ \
+# B1 fix: set WORKDIR before COPY so requirements land in a known place
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        gcc \
+        g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Production stage
+# ── Production ─────────────────────────────────────────────────────────────
 FROM python:3.11-slim
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV CLOUDHAWK_HOME=/opt/cloudhawk
-ENV CLOUDHAWK_PORT=5000
-ENV CLOUDHAWK_HOST=0.0.0.0
-ENV PATH=$CLOUDHAWK_HOME/bin:$PATH
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    CLOUDHAWK_HOME=/opt/cloudhawk \
+    CLOUDHAWK_PORT=5000 \
+    CLOUDHAWK_HOST=0.0.0.0 \
+    FLASK_DEBUG=0
 
-# Set working directory
-WORKDIR $CLOUDHAWK_HOME
+# B11 fix: FLASK_ENV is deprecated — use FLASK_DEBUG=0 instead
+ENV PATH=/opt/cloudhawk/bin:$PATH
 
-# Install runtime dependencies only
-RUN apt-get update && apt-get install -y \
-    curl \
-    wget \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+WORKDIR /opt/cloudhawk
 
-# Copy Python packages from builder stage
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+# B2 fix: apt-get clean BEFORE rm -rf lists (correct order)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create necessary directories
-RUN mkdir -p $CLOUDHAWK_HOME/logs \
-             $CLOUDHAWK_HOME/src/detection/models \
-             $CLOUDHAWK_HOME/src/alerts \
-             $CLOUDHAWK_HOME/tests \
-             $CLOUDHAWK_HOME/bin
+# B7 fix: copy only site-packages from builder, not all of /usr/local/bin
+COPY --from=builder /usr/local/lib/python3.11/site-packages \
+                    /usr/local/lib/python3.11/site-packages
 
-# Copy application code
-COPY src/ $CLOUDHAWK_HOME/src/
-COPY tests/ $CLOUDHAWK_HOME/tests/
-COPY docs/ $CLOUDHAWK_HOME/docs/
-COPY config/ $CLOUDHAWK_HOME/config/
-COPY setup.py $CLOUDHAWK_HOME/
-COPY run_cloudhawk.py $CLOUDHAWK_HOME/
-COPY README.md $CLOUDHAWK_HOME/
-COPY LICENSE $CLOUDHAWK_HOME/
+# Create runtime directories before copying app code
+RUN mkdir -p /opt/cloudhawk/logs \
+             /opt/cloudhawk/src/detection/models \
+             /opt/cloudhawk/src/alerts \
+             /opt/cloudhawk/tests \
+             /opt/cloudhawk/bin
 
-# Create CloudHawk user for security
-RUN useradd -r -s /bin/false -d $CLOUDHAWK_HOME cloudhawk && \
-    chown -R cloudhawk:cloudhawk $CLOUDHAWK_HOME
+# Copy application code — B6 fix: exclude docs (not needed at runtime)
+COPY src/    /opt/cloudhawk/src/
+COPY tests/  /opt/cloudhawk/tests/
+COPY config/ /opt/cloudhawk/config/
+COPY setup.py run_cloudhawk.py README.md LICENSE /opt/cloudhawk/
 
-# Create startup script
-RUN echo '#!/bin/bash\n\
-set -e\n\
-\n\
-# Initialize CloudHawk if first run\n\
-if [ ! -f "$CLOUDHAWK_HOME/.initialized" ]; then\n\
-    echo "Initializing CloudHawk..."\n\
-    python -c "import sys; sys.path.insert(0, \"/opt/cloudhawk/src\"); from setup import create_directories; create_directories()"\n\
-    touch "$CLOUDHAWK_HOME/.initialized"\n\
-fi\n\
-\n\
-# Start CloudHawk\n\
-exec python run_cloudhawk.py "$@"' > $CLOUDHAWK_HOME/bin/cloudhawk-start.sh && \
-    chmod +x $CLOUDHAWK_HOME/bin/cloudhawk-start.sh && \
-    chown cloudhawk:cloudhawk $CLOUDHAWK_HOME/bin/cloudhawk-start.sh
+# Create non-root user
+RUN useradd -r -s /bin/false -d /opt/cloudhawk cloudhawk && \
+    chown -R cloudhawk:cloudhawk /opt/cloudhawk
 
-# Switch to non-root user
+# B5 fix: write startup script with a heredoc instead of echo + \n literals
+COPY --chown=cloudhawk:cloudhawk deployment/entrypoint.sh /opt/cloudhawk/bin/cloudhawk-start.sh
+RUN chmod +x /opt/cloudhawk/bin/cloudhawk-start.sh
+
 USER cloudhawk
 
-# Expose port
-EXPOSE $CLOUDHAWK_PORT
+# B4 fix: EXPOSE does not expand env vars — hardcode the port number
+EXPOSE 5000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:$CLOUDHAWK_PORT/api/v1/health || exit 1
+# B3 fix: use /health which actually exists in app.py
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:5000/health || exit 1
 
-# Default command
+# Labels before CMD (convention)
+LABEL maintainer="CloudHawk Team" \
+      version="1.0.0" \
+      description="Multi-cloud security monitoring for AWS, Azure, and GCP" \
+      org.opencontainers.image.title="CloudHawk" \
+      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.vendor="CloudHawk" \
+      org.opencontainers.image.source="https://github.com/vatshariyani/cloudhawk"
+
 CMD ["/opt/cloudhawk/bin/cloudhawk-start.sh"]
-
-# Labels for metadata
-LABEL maintainer="CloudHawk Team"
-LABEL version="2.0.0"
-LABEL description="Multi-cloud security monitoring tool with ML-based anomaly detection"
-LABEL org.opencontainers.image.title="CloudHawk"
-LABEL org.opencontainers.image.description="Enterprise-grade cloud security monitoring for AWS, Azure, and GCP"
-LABEL org.opencontainers.image.version="2.0.0"
-LABEL org.opencontainers.image.vendor="CloudHawk"
-LABEL org.opencontainers.image.source="https://github.com/vatshariyani/cloudhawk"
-LABEL org.opencontainers.image.documentation="https://github.com/vatshariyani/cloudhawk/blob/main/README.md"

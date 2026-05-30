@@ -164,12 +164,14 @@ Dockerfile
 docker-compose.yml
 .dockerignore
 
-# Documentation files (exclude from Docker build)
-# README.md - commented out to allow copying
-# docs/ - commented out to allow copying
-# Allow README.md to be copied
+# Documentation — not needed at runtime
+docs/
+assets/
 *.md
 !README.md
+
+# Deployment configs — not needed inside the image
+deployment/
 
 # Test files (exclude from Docker build)
 # tests/ - commented out to allow copying
