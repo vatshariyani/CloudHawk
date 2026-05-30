@@ -20,12 +20,16 @@ import logging
 from typing import List, Dict, Any, Optional
 from botocore.exceptions import ClientError, NoCredentialsError
 
+from collector.base_collector import BaseCollector
 
-class AWSCollector:
+
+class AWSCollector(BaseCollector):
+    cloud = "aws"
+
     def __init__(self, region: str = "us-east-1", max_events: int = 1000):
+        super().__init__()
         self.region = region
         self.max_events = max_events
-        self.logger = logging.getLogger(__name__)
 
         try:
             self.ec2 = boto3.client("ec2", region_name=region)
@@ -873,6 +877,10 @@ class AWSCollector:
             self.logger.info(f"Collected {len(result)} {name} events")
         self.logger.info(f"Total events collected: {len(all_events)}")
         return all_events
+
+    def collect_all(self) -> List[Dict]:
+        """Satisfy BaseCollector interface — delegates to collect_all_security_data."""
+        return self.collect_all_security_data()
 
     def save_security_events(self, events: List[Dict], output_dir: str = "logs") -> str:
         os.makedirs(output_dir, exist_ok=True)

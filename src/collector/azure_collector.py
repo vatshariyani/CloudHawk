@@ -28,9 +28,14 @@ from azure.mgmt.monitor import MonitorManagementClient
 from azure.mgmt.security import SecurityCenter
 from azure.mgmt.storage import StorageManagementClient
 
+from collector.base_collector import BaseCollector
 
-class AzureCollector:
+
+class AzureCollector(BaseCollector):
+    cloud = "azure"
+
     def __init__(self, config: Dict[str, Any]):
+        super().__init__()
         self.config = config
         az_cfg = config.get("azure", {})
 
@@ -45,7 +50,6 @@ class AzureCollector:
 
         self.max_events: int = az_cfg.get("max_events_per_service", 1000)
         self.hours_back: int = az_cfg.get("hours_back", 24)
-        self.logger = logging.getLogger(__name__)
 
         self._credential = self._load_credentials(az_cfg)
 
@@ -96,32 +100,9 @@ class AzureCollector:
             )
         return self._storage_client
 
-    # ------------------------------------------------------------------
-    # Standardised event builder
-    # ------------------------------------------------------------------
-
-    def _event(
-        self,
-        source: str,
-        resource_id: str,
-        event_type: str,
-        severity: str,
-        description: str,
-        raw: Any,
-        **extra,
-    ) -> Dict[str, Any]:
-        ev = {
-            "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
-            "cloud": "azure",
-            "source": source,
-            "resource_id": resource_id,
-            "event_type": event_type,
-            "severity": severity,
-            "description": description,
-            "subscription_id": self.subscription_id,
-            "raw_event": raw,
-        }
-        ev.update(extra)
+    def _event(self, source, resource_id, event_type, severity, description, raw, **extra):
+        ev = super()._event(source, resource_id, event_type, severity, description, raw, **extra)
+        ev["subscription_id"] = self.subscription_id
         return ev
 
     # ------------------------------------------------------------------
