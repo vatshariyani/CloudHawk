@@ -200,7 +200,7 @@ rules:
     title: Privilege escalation action
     description: Action that could lead to privilege escalation detected
     service: CloudTrail
-    condition: source == "AWS_CLOUDTRAIL" and event_type == "HIGH_RISK_ACTION" and event.action in "CreateAccessKey,AttachUserPolicy,PutUserPolicy,AssumeRole"
+    condition: source == "AWS_CLOUDTRAIL" and event_type == "HIGH_RISK_ACTION" and event.action in "CreateAccessKey, AttachUserPolicy, PutUserPolicy, AssumeRole, CreateRole"
     severity: HIGH
     remediation: "Monitor and validate privilege escalation actions"
 
@@ -476,7 +476,7 @@ rules:
     title: Azure collection error
     description: Error occurred during Azure data collection
     service: COLLECTION
-    condition: source == "AZURE_STORAGE" and event_type == "COLLECTION_ERROR"
+    condition: source == "AZURE_COLLECTOR" and event_type == "COLLECTION_ERROR"
     severity: CRITICAL
     remediation: "Check Azure credentials and permissions, review error logs"
 
@@ -484,6 +484,6 @@ rules:
     title: GCP collection error
     description: Error occurred during GCP data collection
     service: COLLECTION
-    condition: source == "GCP_STORAGE" and event_type == "COLLECTION_ERROR"
+    condition: source == "GCP_COLLECTOR" and event_type == "COLLECTION_ERROR"
     severity: CRITICAL
     remediation: "Check GCP credentials and permissions, review error logs"

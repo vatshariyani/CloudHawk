@@ -1,253 +1,279 @@
 import os
 import json
 import yaml
+import logging
 import threading
-from queue import Queue
-from datetime import datetime
+from queue import Queue, Empty
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
+
+logger = logging.getLogger(__name__)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ALERTS_DIR = os.path.join(BASE_DIR, "alerts")
 ALERTS_FILE = os.path.join(ALERTS_DIR, "alerts.json")
 
+
 class RuleEngine:
     def __init__(self, rules_file: str, events_file: str, threads: int = 4, chunk_size: int = 500):
-        """
-        Initialize Rule Engine for security event analysis
-        
-        Args:
-            rules_file: Path to YAML file containing detection rules
-            events_file: Path to JSON file containing security events
-            threads: Number of worker threads for processing
-            chunk_size: Number of events to process per chunk
-        """
         self.rules = self.load_rules(rules_file)
         self.events_file = events_file
         self.threads = threads
         self.chunk_size = chunk_size
-        self.alerts = []
+        self.alerts: List[Dict] = []
         self.lock = threading.Lock()
         self.alerts_file = ALERTS_FILE
 
+    # ------------------------------------------------------------------
+    # Loading
+    # ------------------------------------------------------------------
+
     def load_rules(self, rules_file: str) -> List[Dict]:
-        """Load detection rules from YAML file"""
         try:
             with open(rules_file, "r") as f:
                 rules_data = yaml.safe_load(f)
-                
-            # Handle different YAML structures
-            if isinstance(rules_data, dict):
-                if 'rules' in rules_data:
-                    rules = rules_data['rules']
-                else:
-                    rules = [rules_data]
-            elif isinstance(rules_data, list):
-                rules = rules_data
-            else:
-                print(f"⚠️ Invalid rules file format: {rules_file}")
-                return []
-            
-            # Validate and clean rules
-            clean_rules = []
-            for rule in rules:
-                if isinstance(rule, dict) and 'id' in rule and 'condition' in rule:
-                    clean_rules.append(rule)
-                else:
-                    print(f"⚠️ Skipping invalid rule: {rule}")
-            
-            print(f"✅ Loaded {len(clean_rules)} valid rules from {rules_file}")
-            return clean_rules
-            
         except FileNotFoundError:
-            print(f"❌ Rules file not found: {rules_file}")
+            logger.error(f"Rules file not found: {rules_file}")
             return []
         except yaml.YAMLError as e:
-            print(f"❌ Error parsing rules file: {e}")
-            return []
-        except Exception as e:
-            print(f"❌ Error loading rules: {e}")
+            logger.error(f"YAML parse error in rules file: {e}")
             return []
 
+        if isinstance(rules_data, dict):
+            rules = rules_data.get("rules", [rules_data])
+        elif isinstance(rules_data, list):
+            rules = rules_data
+        else:
+            logger.error(f"Invalid rules file format: {rules_file}")
+            return []
+
+        clean: List[Dict] = []
+        for rule in rules:
+            if not isinstance(rule, dict):
+                logger.warning(f"Skipping non-dict rule: {rule}")
+                continue
+            if "id" not in rule:
+                logger.warning(f"Skipping rule missing 'id': {rule}")
+                continue
+            # B10 fix: reject rules with null/missing condition
+            if not rule.get("condition"):
+                logger.warning(f"Skipping rule '{rule.get('id')}' — condition is null or missing")
+                continue
+            clean.append(rule)
+
+        logger.info(f"Loaded {len(clean)} valid rules from {rules_file}")
+        return clean
 
     def load_events(self) -> List[Dict]:
-        """Load security events from JSON file"""
         try:
             with open(self.events_file, "r") as f:
                 events = json.load(f)
-            
-            if not isinstance(events, list):
-                print(f"⚠️ Events file should contain a list of events")
-                return []
-            
-            print(f"✅ Loaded {len(events)} security events from {self.events_file}")
-            return events
-            
         except FileNotFoundError:
-            print(f"⚠️ Events file not found: {self.events_file}")
+            logger.warning(f"Events file not found: {self.events_file}")
             return []
         except json.JSONDecodeError as e:
-            print(f"⚠️ Invalid JSON in events file: {e}")
-            return []
-        except Exception as e:
-            print(f"⚠️ Error loading events: {e}")
+            logger.error(f"Invalid JSON in events file: {e}")
             return []
 
-    def save_alerts(self, alerts_file: str = None) -> str:
-        """Save generated alerts to JSON file"""
+        if not isinstance(events, list):
+            logger.warning("Events file must contain a JSON array")
+            return []
+
+        logger.info(f"Loaded {len(events)} events from {self.events_file}")
+        return events
+
+    def save_alerts(self, alerts_file: Optional[str] = None) -> str:
         if alerts_file is None:
             alerts_file = self.alerts_file
-            
         try:
-            # Ensure alerts directory exists
             os.makedirs(os.path.dirname(alerts_file), exist_ok=True)
-            
-            # Add metadata to alerts
-            alerts_data = {
-                "timestamp": datetime.utcnow().isoformat(),
+            payload = {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "total_alerts": len(self.alerts),
                 "rules_processed": len(self.rules),
-                "alerts": self.alerts
+                "alerts": self.alerts,
             }
-            
             with open(alerts_file, "w") as f:
-                json.dump(alerts_data, f, indent=2, default=str)
-            
-            print(f"✅ Saved {len(self.alerts)} alerts to {alerts_file}")
+                json.dump(payload, f, indent=2, default=str)
+            logger.info(f"Saved {len(self.alerts)} alerts to {alerts_file}")
             return alerts_file
-            
         except Exception as e:
-            print(f"❌ Failed to save alerts: {e}")
+            logger.error(f"Failed to save alerts: {e}")
             return ""
+
+    # ------------------------------------------------------------------
+    # Condition evaluator
+    # ------------------------------------------------------------------
 
     def evaluate_condition(self, event: Dict, condition: str) -> bool:
         """
-        Evaluate conditions against security events with support for:
-        - .contains("value")
-        - ==, !=, >, <, >=, <=
-        - and, or (basic support)
-        - in, not in
-        - null checks
+        Evaluate a rule condition string against an event.
+
+        Supported syntax:
+          field == "value"      field != "value"
+          field > N             field >= N    field < N    field <= N
+          field == null         field != null
+          field.contains("x")
+          field in "a,b,c"      (exact CSV membership, not substring)
+          field not in "a,b,c"
+          <cond> and <cond>     <cond> or <cond>   (standard precedence: and > or)
         """
         try:
-            # Handle complex conditions with and/or
-            if " and " in condition:
-                parts = condition.split(" and ")
-                return all(self.evaluate_condition(event, part.strip()) for part in parts)
-            elif " or " in condition:
-                parts = condition.split(" or ")
-                return any(self.evaluate_condition(event, part.strip()) for part in parts)
-            
-            # Handle null checks
-            if " == null" in condition:
-                field = condition.replace(" == null", "").strip()
-                return self._get_nested_value(event, field) is None
-            elif " != null" in condition:
-                field = condition.replace(" != null", "").strip()
-                return self._get_nested_value(event, field) is not None
-            
-            # Handle .contains() operator
-            if ".contains(" in condition:
-                field, value = condition.split(".contains(")
-                value = value.strip(")").strip('"').strip("'")
-                current = self._get_nested_value(event, field.strip())
-                
-                if current is None:
-                    return False
-                
-                # Handle list/dict -> convert to string
-                return value in str(current)
-            
-            # Handle comparison operators
-            operators = ["!=", ">=", "<=", "==", ">", "<"]
-            for op in operators:
-                if op in condition:
-                    field, value = condition.split(op, 1)
-                    field, value = field.strip(), value.strip().strip('"').strip("'")
-                    current = self._get_nested_value(event, field)
-                    
-                    if current is None:
-                        return False
-                    
-                    # Convert to appropriate type for comparison
-                    try:
-                        if op in [">", "<", ">=", "<="]:
-                            # Numeric comparison
-                            current_val = float(current) if str(current).replace('.', '').replace('-', '').isdigit() else 0
-                            compare_val = float(value) if value.replace('.', '').replace('-', '').isdigit() else 0
-                        else:
-                            # String comparison
-                            current_val = str(current)
-                            compare_val = str(value)
-                        
-                        if op == "==":
-                            return current_val == compare_val
-                        elif op == "!=":
-                            return current_val != compare_val
-                        elif op == ">":
-                            return current_val > compare_val
-                        elif op == "<":
-                            return current_val < compare_val
-                        elif op == ">=":
-                            return current_val >= compare_val
-                        elif op == "<=":
-                            return current_val <= compare_val
-                    except (ValueError, TypeError):
-                        return False
-            
-            # Handle "in" and "not in" operators
-            if " not in " in condition:
-                field, value = condition.split(" not in ")
-                field, value = field.strip(), value.strip().strip('"').strip("'")
-                current = self._get_nested_value(event, field)
-                
-                if current is None:
-                    return True  # Field doesn't exist, so "not in" is true
-                
-                return str(current) not in str(value)
-            elif " in " in condition:
-                field, value = condition.split(" in ")
-                field, value = field.strip(), value.strip().strip('"').strip("'")
-                current = self._get_nested_value(event, field)
-                
-                if current is None:
-                    return False
-                
-                return str(current) in str(value)
-            
-            return False
+            return self._eval(event, condition.strip())
         except Exception as e:
-            print(f"⚠️ Condition evaluation failed for '{condition}': {e}")
+            # B4 fix: log with rule context so broken conditions are visible
+            logger.warning(f"Condition evaluation error for '{condition}': {e}")
             return False
-    
-    def _get_nested_value(self, event: Dict, field_path: str) -> Any:
-        """Get nested value from event using dot notation"""
+
+    def _eval(self, event: Dict, condition: str) -> bool:
+        # B1 fix: correct precedence — split on OR first, then AND within each OR branch
+        # This gives standard precedence: AND binds tighter than OR.
+        or_parts = self._split_top_level(condition, " or ")
+        if len(or_parts) > 1:
+            return any(self._eval_and(event, part.strip()) for part in or_parts)
+        return self._eval_and(event, condition)
+
+    def _eval_and(self, event: Dict, condition: str) -> bool:
+        and_parts = self._split_top_level(condition, " and ")
+        if len(and_parts) > 1:
+            return all(self._eval_atom(event, part.strip()) for part in and_parts)
+        return self._eval_atom(event, condition)
+
+    @staticmethod
+    def _split_top_level(condition: str, separator: str) -> List[str]:
+        """Split on separator only outside quoted strings."""
+        parts: List[str] = []
+        depth = 0
+        in_quote: Optional[str] = None
+        current: List[str] = []
+        i = 0
+        sep_len = len(separator)
+        while i < len(condition):
+            ch = condition[i]
+            if in_quote:
+                current.append(ch)
+                if ch == in_quote:
+                    in_quote = None
+            elif ch in ('"', "'"):
+                in_quote = ch
+                current.append(ch)
+            elif ch == "(":
+                depth += 1
+                current.append(ch)
+            elif ch == ")":
+                depth -= 1
+                current.append(ch)
+            elif depth == 0 and condition[i:i + sep_len] == separator:
+                parts.append("".join(current))
+                current = []
+                i += sep_len
+                continue
+            else:
+                current.append(ch)
+            i += 1
+        parts.append("".join(current))
+        return parts
+
+    def _eval_atom(self, event: Dict, condition: str) -> bool:
+        # null checks
+        if condition.endswith(" == null"):
+            field = condition[: -len(" == null")].strip()
+            return self._get(event, field) is None
+        if condition.endswith(" != null"):
+            field = condition[: -len(" != null")].strip()
+            return self._get(event, field) is not None
+
+        # .contains()
+        if ".contains(" in condition:
+            # B5 fix: only strip the trailing ) to handle values with (
+            dot_idx = condition.index(".contains(")
+            field = condition[:dot_idx].strip()
+            value = condition[dot_idx + len(".contains("):]
+            if value.endswith(")"):
+                value = value[:-1]
+            value = value.strip().strip('"').strip("'")
+            current = self._get(event, field)
+            return current is not None and value in str(current)
+
+        # not in / in  (check before comparison operators to avoid <= / >= confusion)
+        if " not in " in condition:
+            field, value = condition.split(" not in ", 1)
+            return self._eval_membership(event, field.strip(), value.strip(), negate=True)
+        if " in " in condition:
+            field, value = condition.split(" in ", 1)
+            return self._eval_membership(event, field.strip(), value.strip(), negate=False)
+
+        # comparison operators — check multi-char ops before single-char
+        for op in ("!=", ">=", "<=", "==", ">", "<"):
+            if op in condition:
+                field, value = condition.split(op, 1)
+                field = field.strip()
+                value = value.strip().strip('"').strip("'")
+                current = self._get(event, field)
+                if current is None:
+                    return False
+                return self._compare(current, op, value)
+
+        logger.warning(f"Unrecognised condition syntax: '{condition}'")
+        return False
+
+    def _eval_membership(self, event: Dict, field: str, raw_value: str, negate: bool) -> bool:
+        """B2 fix: exact CSV membership, not substring match."""
+        current = self._get(event, field)
+        raw_value = raw_value.strip().strip('"').strip("'")
+        members = {m.strip() for m in raw_value.split(",")}
+        is_member = str(current) in members if current is not None else False
+        return (not is_member) if negate else is_member
+
+    def _compare(self, current: Any, op: str, value: str) -> bool:
+        # B3 fix: attempt numeric comparison only when both sides parse cleanly
         try:
-            keys = field_path.split(".")
-            current = event
-            
-            for key in keys:
-                if isinstance(current, dict) and key in current:
-                    current = current[key]
-                else:
-                    return None
-            
-            return current
-        except Exception:
-            return None
+            lhs = float(current)
+            rhs = float(value)
+            if op == "==":
+                return lhs == rhs
+            if op == "!=":
+                return lhs != rhs
+            if op == ">":
+                return lhs > rhs
+            if op == "<":
+                return lhs < rhs
+            if op == ">=":
+                return lhs >= rhs
+            if op == "<=":
+                return lhs <= rhs
+        except (ValueError, TypeError):
+            pass
+        # Fall back to string comparison
+        lhs_s, rhs_s = str(current), str(value)
+        if op == "==":
+            return lhs_s == rhs_s
+        if op == "!=":
+            return lhs_s != rhs_s
+        return False
+
+    def _get(self, event: Dict, field_path: str) -> Any:
+        """Resolve dot-notation field path against event dict."""
+        current: Any = event
+        for key in field_path.split("."):
+            if isinstance(current, dict) and key in current:
+                current = current[key]
+            else:
+                return None
+        return current
+
+    # ------------------------------------------------------------------
+    # Processing
+    # ------------------------------------------------------------------
 
     def process_chunk(self, chunk: List[Dict]) -> None:
-        """Process a chunk of security events against all rules"""
-        local_alerts = []
-        
+        local_alerts: List[Dict] = []
         for event in chunk:
             for rule in self.rules:
-                if not isinstance(rule, dict) or "condition" not in rule:
-                    continue  # skip invalid rules
-                
                 try:
                     if self.evaluate_condition(event, rule["condition"]):
-                        alert = {
-                            "timestamp": datetime.utcnow().isoformat(),
+                        local_alerts.append({
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
                             "rule_id": rule.get("id", "N/A"),
                             "title": rule.get("title", "No title"),
                             "description": rule.get("description", ""),
@@ -255,104 +281,82 @@ class RuleEngine:
                             "remediation": rule.get("remediation", ""),
                             "service": rule.get("service", "UNKNOWN"),
                             "log_excerpt": event,
-                        }
-                        local_alerts.append(alert)
+                        })
                 except Exception as e:
-                    print(f"⚠️ Error processing rule {rule.get('id', 'N/A')}: {e}")
+                    logger.error(f"Error processing rule '{rule.get('id')}': {e}")
 
         with self.lock:
             self.alerts.extend(local_alerts)
 
-
     def run(self) -> None:
-        """Run the rule engine to process security events"""
-        print(f"🚀 Starting rule engine with {self.threads} threads...")
-        
-        # Load security events
+        logger.info(f"Starting rule engine — {self.threads} threads, chunk size {self.chunk_size}")
+
         events = self.load_events()
         if not events:
-            print("⚠️ No events to process")
+            logger.warning("No events to process")
             return
-        
         if not self.rules:
-            print("⚠️ No rules loaded")
+            logger.warning("No rules loaded")
             return
-        
-        print(f"📊 Processing {len(events)} events against {len(self.rules)} rules...")
-        
-        # Create queue and split events into chunks
-        q = Queue()
-        for i in range(0, len(events), self.chunk_size):
-            chunk = events[i:i + self.chunk_size]
-            q.put(chunk)
 
-        def worker():
-            """Worker thread function"""
+        logger.info(f"Processing {len(events)} events against {len(self.rules)} rules")
+
+        q: Queue = Queue()
+        for i in range(0, len(events), self.chunk_size):
+            q.put(events[i: i + self.chunk_size])
+
+        def worker() -> None:
             while True:
                 try:
+                    # B6 fix: only catch Empty, not all exceptions
                     chunk = q.get(timeout=1)
                     self.process_chunk(chunk)
                     q.task_done()
-                except:
+                except Empty:
                     break
 
-        # Start worker threads
         threads = []
         for i in range(self.threads):
-            t = threading.Thread(target=worker, name=f"Worker-{i+1}")
+            t = threading.Thread(target=worker, name=f"Worker-{i + 1}", daemon=True)
             t.start()
             threads.append(t)
 
-        # Wait for all threads to complete
+        # B7 fix: wait for queue to drain before joining threads
+        q.join()
         for t in threads:
             t.join()
 
-        # Save results
-        alerts_file = self.save_alerts()
-        
-        # Print summary
-        print(f"\n📈 Rule Engine Summary:")
-        print(f"   Events processed: {len(events)}")
-        print(f"   Rules evaluated: {len(self.rules)}")
-        print(f"   Alerts generated: {len(self.alerts)}")
-        print(f"   Alerts saved to: {alerts_file}")
-        
-        # Count alerts by severity
-        severity_counts = {}
+        self.save_alerts()
+
+        severity_counts: Dict[str, int] = {}
         for alert in self.alerts:
-            severity = alert.get('severity', 'UNKNOWN')
-            severity_counts[severity] = severity_counts.get(severity, 0) + 1
-        
-        if severity_counts:
-            print(f"\n🚨 Alerts by Severity:")
-            for severity, count in sorted(severity_counts.items()):
-                print(f"   {severity}: {count}")
+            sev = alert.get("severity", "UNKNOWN")
+            severity_counts[sev] = severity_counts.get(sev, 0) + 1
+
+        logger.info(
+            f"Rule engine complete — {len(events)} events, "
+            f"{len(self.rules)} rules, {len(self.alerts)} alerts"
+        )
+        for sev, count in sorted(severity_counts.items()):
+            logger.info(f"  {sev}: {count}")
 
 
 if __name__ == "__main__":
     import sys
-    import os
-    
-    # Default paths
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+
     rules_file = os.path.join(BASE_DIR, "detection", "security_rules.yaml")
     events_file = os.path.join(BASE_DIR, "logs", "aws_security_events_latest.json")
-    
-    # Allow command line arguments
+
     if len(sys.argv) > 1:
         rules_file = sys.argv[1]
     if len(sys.argv) > 2:
         events_file = sys.argv[2]
-    
-    print("🦅 CloudHawk Rule Engine")
-    print("=" * 50)
-    print(f"Rules file: {rules_file}")
-    print(f"Events file: {events_file}")
-    print()
-    
+
     try:
         engine = RuleEngine(rules_file, events_file, threads=4, chunk_size=100)
         engine.run()
-        print(f"\n✅ Detection complete. Alerts saved in {ALERTS_FILE}")
     except Exception as e:
-        print(f"❌ Error: {e}")
+        logger.error(f"Rule engine failed: {e}")
         sys.exit(1)
