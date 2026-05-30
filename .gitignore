@@ -132,8 +132,9 @@ cloudhawk.log
 src/web/logs/
 src/collector/logs/
 
-# Configuration files with secrets
-config.yaml
+# config.yaml has no secrets — sensitive values go in env vars or alerting_config.json
+# config/config.yaml is tracked; local overrides use config/config.local.yaml (gitignored)
+config/config.local.yaml
 src/config.yaml
 
 # Model files (can be regenerated)

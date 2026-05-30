@@ -1,0 +1,65 @@
+# CloudHawk Configuration
+# All values here override built-in defaults.
+# Sensitive values (passwords, keys) should be set via environment variables, not here.
+
+aws:
+  default_region: us-east-1
+  max_events_per_service: 1000
+  services:
+    - ec2
+    - s3
+    - iam
+    - cloudtrail
+    - guardduty
+
+azure:
+  subscription_id: ""       # override with AZURE_SUBSCRIPTION_ID env var
+  max_events_per_service: 1000
+  services:
+    - storage
+    - vm
+    - keyvault
+    - security_center
+    - activity_log
+
+gcp:
+  project_id: ""            # override with GOOGLE_CLOUD_PROJECT env var
+  max_events_per_service: 1000
+  services:
+    - iam
+    - storage
+    - compute
+    - logging
+
+detection:
+  rule_engine:
+    threads: 4
+    chunk_size: 100
+  anomaly:
+    enabled: false
+    contamination: 0.1
+
+alerting:
+  enabled: false
+  channels:
+    slack:
+      enabled: false
+      webhook_url: ""       # override with SLACK_WEBHOOK_URL env var
+      channel: "#security-alerts"
+    email:
+      enabled: false
+      smtp_server: ""
+      smtp_port: 587
+      username: ""
+      password: ""          # prefer env var or alerting_config.json
+      from_email: ""
+      to_email: ""
+
+web:
+  host: "0.0.0.0"
+  port: 5000
+  debug: false              # override with FLASK_DEBUG=1
+
+logging:
+  level: INFO
+  file: cloudhawk.log
