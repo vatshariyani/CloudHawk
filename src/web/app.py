@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from config import get_config as _global_config, reload as _reload_global_config
+
 # B3 fix: guard collector/blueprint imports so a missing dep doesn't crash startup
 try:
     from detection.rule_engine import RuleEngine
@@ -86,16 +88,12 @@ class CloudHawkDashboard:
             return 0.0
 
     def load_config(self) -> Dict:
+        # T06: use centralised loader — missing keys always fall back to defaults
         try:
-            with open(CONFIG_FILE, "r") as f:
-                data = yaml.safe_load(f)
-                if isinstance(data, dict):
-                    return self._merge_with_defaults(data)
-        except FileNotFoundError:
-            pass
+            return _reload_global_config(CONFIG_FILE)
         except Exception as e:
             logger.error(f"Error loading config: {e}")
-        return self.get_default_config()
+            return self.get_default_config()
 
     def get_default_config(self) -> Dict:
         return {
@@ -178,7 +176,7 @@ class CloudHawkDashboard:
     def reload_config_if_changed(self) -> bool:
         current = self._mtime(CONFIG_FILE)
         if current > self.config_last_modified:
-            self.config = self.load_config()
+            self.config = _reload_global_config(CONFIG_FILE)
             self.config_last_modified = current
             logger.info("Configuration reloaded")
             return True

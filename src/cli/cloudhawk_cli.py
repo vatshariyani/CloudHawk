@@ -25,6 +25,7 @@ from typing import Dict, List, Any, Optional
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+from config import get_config, get as cfg_get
 from collector.aws_collector import AWSCollector
 from detection.rule_engine import RuleEngine
 
@@ -56,16 +57,8 @@ class CloudHawkCLI:
         )
     
     def load_config(self) -> Dict:
-        """Load configuration from YAML file"""
-        try:
-            with open(self.config_file, 'r') as f:
-                return yaml.safe_load(f)
-        except FileNotFoundError:
-            self.logger.warning(f"Config file not found: {self.config_file}")
-            return self.get_default_config()
-        except Exception as e:
-            self.logger.error(f"Error loading config: {e}")
-            return self.get_default_config()
+        """Load configuration — missing keys always fall back to defaults."""
+        return get_config(self.config_file)
     
     def get_default_config(self) -> Dict:
         """Get default configuration"""
