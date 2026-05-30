@@ -1,140 +1,176 @@
 """
-CloudHawk API Authentication Module
-Provides JWT-based authentication and API key management
+CloudHawk API Authentication
+
+Supports two credential schemes on every protected endpoint:
+  1. Bearer JWT — Authorization: Bearer <token>
+                  Token is issued by POST /api/v1/auth/token
+  2. API Key    — X-API-Key: <key>
+                  Key is issued by POST /api/v1/auth/api-key (admin only)
+
+The secret key used to sign JWTs is read from the CLOUDHAWK_SECRET_KEY
+environment variable.  A fallback is provided so the server starts in
+development without configuration, but production deployments MUST set this
+variable to a strong random value.
+
+Permissions
+-----------
+"read"   — GET endpoints
+"write"  — POST/PUT/DELETE endpoints
+"admin"  — key-generation endpoint; also implies read + write
 """
 
+import logging
 import os
-import jwt
-import hashlib
 import secrets
 from datetime import datetime, timedelta
-from typing import Dict, Optional, List
 from functools import wraps
-from flask import request, jsonify, current_app
-import logging
+from typing import Dict, List, Optional
+
+import jwt
+from flask import jsonify, request
 
 logger = logging.getLogger(__name__)
 
-class APIAuth:
-    """API Authentication Manager"""
-    
-    def __init__(self, secret_key: str = None):
-        self.secret_key = secret_key or os.getenv('CLOUDHAWK_SECRET_KEY', 'cloudhawk-secret-key')
-        self.api_keys = {}  # In production, store in database
-        self._load_api_keys()
-    
-    def _load_api_keys(self):
-        """Load API keys from environment or config"""
-        # In production, load from database
-        default_key = os.getenv('CLOUDHAWK_API_KEY')
-        if default_key:
-            self.api_keys[default_key] = {
-                'name': 'default',
-                'permissions': ['read', 'write', 'admin'],
-                'created_at': datetime.utcnow(),
-                'last_used': None
-            }
-    
-    def generate_api_key(self, name: str, permissions: List[str] = None) -> str:
-        """Generate a new API key"""
-        if permissions is None:
-            permissions = ['read']
-        
-        api_key = secrets.token_urlsafe(32)
-        self.api_keys[api_key] = {
-            'name': name,
-            'permissions': permissions,
-            'created_at': datetime.utcnow(),
-            'last_used': None
-        }
-        
-        logger.info(f"Generated API key for {name} with permissions: {permissions}")
-        return api_key
-    
-    def validate_api_key(self, api_key: str) -> Optional[Dict]:
-        """Validate API key and return user info"""
-        if api_key not in self.api_keys:
-            return None
-        
-        # Update last used timestamp
-        self.api_keys[api_key]['last_used'] = datetime.utcnow()
-        return self.api_keys[api_key]
-    
-    def has_permission(self, api_key: str, permission: str) -> bool:
-        """Check if API key has specific permission"""
-        user_info = self.validate_api_key(api_key)
-        if not user_info:
-            return False
-        
-        return permission in user_info.get('permissions', [])
-    
-    def generate_jwt_token(self, user_id: str, permissions: List[str], expires_hours: int = 24) -> str:
-        """Generate JWT token for user"""
-        payload = {
-            'user_id': user_id,
-            'permissions': permissions,
-            'exp': datetime.utcnow() + timedelta(hours=expires_hours),
-            'iat': datetime.utcnow()
-        }
-        
-        return jwt.encode(payload, self.secret_key, algorithm='HS256')
-    
-    def validate_jwt_token(self, token: str) -> Optional[Dict]:
-        """Validate JWT token and return payload"""
-        try:
-            payload = jwt.decode(token, self.secret_key, algorithms=['HS256'])
-            return payload
-        except jwt.ExpiredSignatureError:
-            logger.warning("JWT token expired")
-            return None
-        except jwt.InvalidTokenError:
-            logger.warning("Invalid JWT token")
-            return None
+_JWT_ALGORITHM = "HS256"
+_JWT_EXPIRY_HOURS = 24
 
-# Global auth instance
+
+class APIAuth:
+    """Manages JWT tokens and in-process API key store."""
+
+    def __init__(self, secret_key: Optional[str] = None):
+        self.secret_key = (
+            secret_key
+            or os.getenv("CLOUDHAWK_SECRET_KEY")
+            or "cloudhawk-dev-secret-change-in-production"
+        )
+        if self.secret_key == "cloudhawk-dev-secret-change-in-production":
+            logger.warning(
+                "CLOUDHAWK_SECRET_KEY is not set — using insecure default. "
+                "Set this env var before deploying to production."
+            )
+        self._api_keys: Dict[str, Dict] = {}
+        self._load_env_key()
+
+    def _load_env_key(self):
+        """Bootstrap an API key from CLOUDHAWK_API_KEY env var if present."""
+        key = os.getenv("CLOUDHAWK_API_KEY")
+        if key:
+            self._api_keys[key] = {
+                "name": "env-default",
+                "permissions": ["read", "write", "admin"],
+                "created_at": datetime.utcnow().isoformat(),
+                "last_used": None,
+            }
+
+    # ------------------------------------------------------------------
+    # API keys
+    # ------------------------------------------------------------------
+
+    def generate_api_key(self, name: str, permissions: Optional[List[str]] = None) -> str:
+        key = secrets.token_urlsafe(32)
+        self._api_keys[key] = {
+            "name": name,
+            "permissions": permissions or ["read"],
+            "created_at": datetime.utcnow().isoformat(),
+            "last_used": None,
+        }
+        logger.info("Generated API key '%s' with permissions %s", name, permissions)
+        return key
+
+    def _lookup_api_key(self, key: str) -> Optional[Dict]:
+        info = self._api_keys.get(key)
+        if info:
+            info["last_used"] = datetime.utcnow().isoformat()
+        return info
+
+    def _key_has_permission(self, key: str, permission: str) -> bool:
+        info = self._lookup_api_key(key)
+        if not info:
+            return False
+        perms = info.get("permissions", [])
+        return permission in perms or "admin" in perms
+
+    # ------------------------------------------------------------------
+    # JWT tokens
+    # ------------------------------------------------------------------
+
+    def generate_jwt_token(
+        self,
+        user_id: str,
+        permissions: Optional[List[str]] = None,
+        expires_hours: int = _JWT_EXPIRY_HOURS,
+    ) -> str:
+        now = datetime.utcnow()
+        payload = {
+            "sub": user_id,
+            "permissions": permissions or ["read"],
+            "iat": now,
+            "exp": now + timedelta(hours=expires_hours),
+        }
+        return jwt.encode(payload, self.secret_key, algorithm=_JWT_ALGORITHM)
+
+    def validate_jwt_token(self, token: str) -> Optional[Dict]:
+        try:
+            return jwt.decode(token, self.secret_key, algorithms=[_JWT_ALGORITHM])
+        except jwt.ExpiredSignatureError:
+            logger.debug("JWT token expired")
+        except jwt.InvalidTokenError as exc:
+            logger.debug("Invalid JWT token: %s", exc)
+        return None
+
+    def _jwt_has_permission(self, token: str, permission: str) -> bool:
+        payload = self.validate_jwt_token(token)
+        if not payload:
+            return False
+        perms = payload.get("permissions", [])
+        return permission in perms or "admin" in perms
+
+
+# Module-level singleton
 auth_manager = APIAuth()
 
-def require_auth(permission: str = 'read'):
-    """Decorator to require API authentication"""
+
+# ---------------------------------------------------------------------------
+# Decorators
+# ---------------------------------------------------------------------------
+
+def require_auth(permission: str = "read"):
+    """Require a valid API key or Bearer JWT with the given permission."""
     def decorator(f):
         @wraps(f)
-        def decorated_function(*args, **kwargs):
-            # Check for API key in header
-            api_key = request.headers.get('X-API-Key')
+        def wrapper(*args, **kwargs):
+            # 1. API key
+            api_key = request.headers.get("X-API-Key")
             if api_key:
-                if not auth_manager.has_permission(api_key, permission):
-                    return jsonify({'error': 'Insufficient permissions'}), 403
-                return f(*args, **kwargs)
-            
-            # Check for JWT token in Authorization header
-            auth_header = request.headers.get('Authorization')
-            if auth_header and auth_header.startswith('Bearer '):
-                token = auth_header.split(' ')[1]
-                payload = auth_manager.validate_jwt_token(token)
-                if payload and permission in payload.get('permissions', []):
+                if auth_manager._key_has_permission(api_key, permission):
                     return f(*args, **kwargs)
-            
-            return jsonify({'error': 'Authentication required'}), 401
-        
-        return decorated_function
+                return jsonify({"error": "Insufficient permissions"}), 403
+
+            # 2. Bearer JWT
+            auth_header = request.headers.get("Authorization", "")
+            if auth_header.startswith("Bearer "):
+                token = auth_header[7:]
+                if auth_manager._jwt_has_permission(token, permission):
+                    return f(*args, **kwargs)
+                # Token present but invalid/expired/insufficient
+                return jsonify({"error": "Invalid or expired token"}), 401
+
+            return jsonify({"error": "Authentication required"}), 401
+        return wrapper
     return decorator
 
+
 def require_admin(f):
-    """Decorator to require admin permissions"""
-    return require_auth('admin')(f)
+    """Shortcut for require_auth('admin')."""
+    return require_auth("admin")(f)
+
 
 def rate_limit(requests_per_minute: int = 60):
-    """Rate limiting decorator"""
+    """Stub rate-limiter — plug in Redis / flask-limiter for production."""
     def decorator(f):
         @wraps(f)
-        def decorated_function(*args, **kwargs):
-            # Simple in-memory rate limiting (use Redis in production)
-            client_ip = request.remote_addr
-            current_time = datetime.utcnow()
-            
-            # This is a simplified implementation
-            # In production, use Redis or similar for distributed rate limiting
+        def wrapper(*args, **kwargs):
             return f(*args, **kwargs)
-        
-        return decorated_function
+        return wrapper
     return decorator
