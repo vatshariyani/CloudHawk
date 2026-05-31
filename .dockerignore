@@ -171,7 +171,9 @@ assets/
 !README.md
 
 # Deployment configs — not needed inside the image
+# (except entrypoint.sh, which the Dockerfile COPYs into the image)
 deployment/
+!deployment/entrypoint.sh
 
 # Test files (exclude from Docker build)
 # tests/ - commented out to allow copying
