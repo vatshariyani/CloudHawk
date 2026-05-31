@@ -390,12 +390,25 @@ def generate_recent_activity(alerts_data: Dict) -> List[Dict]:
 # Routes — pages
 # ------------------------------------------------------------------
 
+def _ch_data() -> Dict:
+    dashboard.reload_alerts_if_changed()
+    alerts = dashboard.alerts_data.get("alerts", [])
+    try:
+        with open(RULES_FILE) as fh:
+            rules = (yaml.safe_load(fh) or {}).get("rules", [])
+    except Exception:
+        rules = []
+    return {"alerts": alerts, "rules": rules,
+            "last_scan": dashboard.alerts_data.get("timestamp", "—")}
+
+
 @app.route("/")
 def index():
     dashboard.reload_config_if_changed()
     dashboard.reload_alerts_if_changed()
     summary = dashboard.get_alerts_summary()
-    return render_template("dashboard.html", summary=summary, config=dashboard.config)
+    return render_template("dashboard.html", summary=summary, config=dashboard.config,
+                           ch_data=_ch_data())
 
 
 @app.route("/alerts")
@@ -411,7 +424,20 @@ def alerts():
     ]
     filtered.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
     return render_template("alerts.html", alerts=filtered,
-                           severity_filter=severity_filter, service_filter=service_filter)
+                           severity_filter=severity_filter, service_filter=service_filter,
+                           ch_data=_ch_data())
+
+
+@app.route("/timeline")
+def timeline():
+    dashboard.reload_alerts_if_changed()
+    return render_template("timeline.html", ch_data=_ch_data())
+
+
+@app.route("/compliance")
+def compliance():
+    dashboard.reload_alerts_if_changed()
+    return render_template("compliance.html", ch_data=_ch_data())
 
 
 @app.route("/scan", methods=["GET", "POST"])
@@ -508,22 +534,32 @@ def rules():
     except Exception as e:
         rule_list = []
         flash(f"Error loading rules: {e}", "error")
-    return render_template("rules.html", rules=rule_list)
+    return render_template("rules.html", rules=rule_list, ch_data=_ch_data())
 
-
-@app.route("/health-page")
-def health_page():
-    return render_template("health.html")
-
-
-@app.route("/enhanced-dashboard")
-def enhanced_dashboard():
-    return render_template("enhanced_dashboard.html")
 
 
 # ------------------------------------------------------------------
 # Routes — API
 # ------------------------------------------------------------------
+
+@app.route("/api/alerts/status", methods=["POST"])
+def api_alert_status():
+    data = request.get_json(force=True) or {}
+    status = (data.get("status") or "").upper()
+    if status not in ("OPEN", "ACKNOWLEDGED", "RESOLVED"):
+        return jsonify({"status": "error", "message": "invalid status"}), 400
+    keys = {(i.get("rule_id"), i.get("resource_id"), i.get("timestamp"))
+            for i in data.get("alerts", [])}
+    for a in dashboard.alerts_data.get("alerts", []):
+        log = a.get("log_excerpt", {}) or {}
+        rid = a.get("resource_id") or log.get("resource_id")
+        if (a.get("rule_id"), rid, a.get("timestamp")) in keys:
+            a["status"] = status
+    with open(ALERTS_FILE, "w") as fh:
+        json.dump(dashboard.alerts_data, fh, indent=2, default=str)
+    dashboard.alerts_last_modified = dashboard._mtime(ALERTS_FILE)
+    return jsonify({"status": "success"})
+
 
 @app.route("/api/alerts")
 def api_alerts():
