@@ -326,6 +326,21 @@ class RuleEngine:
         for t in threads:
             t.join()
 
+        # T15: deduplicate before scoring and saving
+        try:
+            from alerts.dedup import AlertDeduplicator
+            deduper = AlertDeduplicator(cooldown_minutes=60)
+            self.alerts = deduper.deduplicate(self.alerts)
+        except Exception as e:
+            logger.warning(f"Deduplication unavailable: {e}")
+
+        # T14: add numeric severity_score to each alert
+        try:
+            from detection.severity import SeverityScorer
+            self.alerts = SeverityScorer().score_alerts(self.alerts)
+        except Exception as e:
+            logger.warning(f"Severity scoring unavailable: {e}")
+
         self.save_alerts()
 
         severity_counts: Dict[str, int] = {}

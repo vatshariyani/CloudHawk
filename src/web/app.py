@@ -542,6 +542,21 @@ def rules():
 # Routes — API
 # ------------------------------------------------------------------
 
+@app.route("/api/compliance/report")
+def api_compliance_report():
+    framework = request.args.get("framework")  # optional: CIS | SOC2 | ISO27001
+    try:
+        from compliance.compliance_engine import ComplianceEngine
+        engine = ComplianceEngine()
+        dashboard.reload_alerts_if_changed()
+        alerts = dashboard.alerts_data.get("alerts", [])
+        report = engine.assess(alerts, framework_id=framework or None)
+        return jsonify(report)
+    except Exception as e:
+        logger.exception("Compliance report failed")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/alerts/status", methods=["POST"])
 def api_alert_status():
     data = request.get_json(force=True) or {}
