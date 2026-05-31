@@ -7,6 +7,36 @@
   "use strict";
   const { icon, esc, sevTag, sevDot, cloudBadge, statusPill, sevRank, ago, fmtTime } = CH;
 
+  /* ---------------- download helpers ---------------- */
+  function downloadAs(content, filename, mime) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+  function alertsToCSV(rows) {
+    const cols = ["timestamp", "severity", "title", "rule_id", "service", "cloud", "resource_id", "status", "description", "remediation"];
+    const q = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+    return [cols.join(","), ...rows.map(a => cols.map(c => q(a[c])).join(","))].join("\r\n");
+  }
+  function rulesToYAML(rules) {
+    const lines = ["rules:"];
+    rules.forEach(r => {
+      lines.push("  - id: " + (r.id || ""));
+      ["title", "description", "service", "severity", "owasp", "condition", "remediation"].forEach(k => {
+        lines.push("    " + k + ": " + JSON.stringify(r[k] || ""));
+      });
+    });
+    return lines.join("\n");
+  }
+  function complianceToCSV(cats) {
+    const cols = ["owasp", "rules", "findings", "critical"];
+    const q = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+    return [cols.join(","), ...cats.map(c => cols.map(col => q(c[col])).join(","))].join("\r\n");
+  }
+  function stamp() { return new Date().toISOString().slice(0, 10); }
+
   /* ---------------- shared state ---------------- */
   const APP = {
     alerts: [], rules: [], ruleMap: {},
@@ -67,7 +97,9 @@
       apiPost("/api/rules/bulk-edit", { ids, status: on ? "enabled" : "disabled" });
       toast(ids.length + " rule(s) " + (on ? "enabled" : "disabled"), "ok");
     } else if (action === "export") {
-      toast("Exported " + ids.length + " rule(s) as YAML", "info");
+      const sel = APP.rules.filter(r => ids.includes(r.id));
+      downloadAs(rulesToYAML(sel), "cloudhawk-rules-" + stamp() + ".yaml", "text/yaml");
+      toast("Exported " + ids.length + " rule(s) as YAML", "ok");
     }
   };
 
@@ -144,7 +176,12 @@
           '<div class="ov-right">' + liveFeed() + '</div>' +
         '</div></div>';
 
-    root.querySelector('[data-act="export"]').onclick = () => toast("Posture report exported (PDF)", "info");
+    root.querySelector('[data-act="export"]').onclick = () => {
+      const stats = CH.computeStats(APP.alerts);
+      const report = { generated: new Date().toISOString(), posture_score: stats.score, grade: stats.grade, open_findings: stats.total, by_severity: stats.bySeverity, by_cloud: stats.byCloud, by_service: stats.byService };
+      downloadAs(JSON.stringify(report, null, 2), "cloudhawk-report-" + stamp() + ".json", "application/json");
+      toast("Posture report downloaded", "ok");
+    };
     wireFeed(root);
   }
 
@@ -182,7 +219,7 @@
   /* ============================================================
      ALERTS
      ============================================================ */
-  const aState = { q: "", sev: "ALL", cloud: "ALL", status: "OPEN", sortKey: "timestamp", sortDir: "desc", sel: new Set() };
+  const aState = { q: new URLSearchParams(location.search).get("q") || "", sev: "ALL", cloud: "ALL", status: "OPEN", sortKey: "timestamp", sortDir: "desc", sel: new Set() };
 
   function alertsFiltered() {
     let rows = APP.alerts.filter(a => {
@@ -352,7 +389,7 @@
     q.addEventListener("input", () => { rState.q = q.value; root.querySelector("#r-clear").style.display = q.value ? "" : "none"; updateRules(root); });
     root.querySelector("#r-clear").onclick = () => { rState.q = ""; q.value = ""; q.focus(); root.querySelector("#r-clear").style.display = "none"; updateRules(root); };
     root.querySelector("#r-cloud").onchange = e => { rState.cloud = e.target.value; updateRules(root); };
-    root.querySelector('[data-act="new-rule"]').onclick = () => toast("Rule editor — wire to POST /api/v1/rules", "info");
+    root.querySelector('[data-act="new-rule"]').onclick = () => showNewRuleModal(root);
     wireSegmented(root, "r-sev", v => { rState.sev = v; updateRules(root); });
     updateRules(root);
   }
@@ -409,6 +446,80 @@
   }
 
   /* ============================================================
+     NEW RULE MODAL
+     ============================================================ */
+  function mField(label, id, type, placeholder, required) {
+    const isTA = type === "textarea";
+    const field = isTA
+      ? '<textarea id="' + id + '" class="select" rows="3" style="width:100%;font-family:inherit;resize:vertical" placeholder="' + esc(placeholder || "") + '"></textarea>'
+      : '<input id="' + id + '" type="text" class="select" style="width:100%" placeholder="' + esc(placeholder || "") + '">';
+    return '<div><label class="dr-k" style="display:block;margin-bottom:6px">' + label + (required ? ' <span style="color:var(--sev-crit)">*</span>' : "") + '</label>' + field + '</div>';
+  }
+  function showNewRuleModal(root) {
+    const o = overlayRoot();
+    const sevOpts = ["CRITICAL", "HIGH", "MEDIUM", "LOW"].map(s => '<option value="' + s + '">' + s + '</option>').join("");
+    const owaspOpts = [
+      "A01:2021 Broken Access Control", "A02:2021 Cryptographic Failures",
+      "A03:2021 Injection", "A04:2021 Insecure Design", "A05:2021 Security Misconfiguration",
+      "A06:2021 Vulnerable Components", "A07:2021 Authentication Failures",
+      "A08:2021 Software and Data Integrity", "A09:2021 Logging Failures", "A10:2021 SSRF",
+    ].map(v => '<option value="' + v + '">' + v + '</option>').join("");
+    o.innerHTML =
+      '<div style="position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:800" id="d-scrim">' +
+      '<div style="background:var(--panel);border:1px solid var(--line);border-radius:10px;width:560px;max-width:calc(100vw - 32px);max-height:90vh;overflow-y:auto;display:flex;flex-direction:column" onclick="event.stopPropagation()">' +
+      '<div class="drawer-head"><div class="drawer-head-top">' +
+        '<h2 class="drawer-title" style="font-size:16px;margin:0">New detection rule</h2>' +
+        '<div style="flex:1"></div><button class="icon-btn" id="m-close">' + icon("x", { size: 18 }) + '</button></div></div>' +
+      '<div style="display:flex;flex-direction:column;gap:14px;padding:20px 24px">' +
+        mField("Rule ID", "m-id", "text", "AWS_EC2_099", true) +
+        mField("Title", "m-title", "text", "Publicly exposed resource", true) +
+        mField("Description", "m-desc", "textarea", "Detects publicly accessible resources that may expose sensitive data.") +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">' +
+          mField("Service", "m-service", "text", "EC2") +
+          '<div><label class="dr-k" style="display:block;margin-bottom:6px">Severity</label>' +
+            '<select id="m-severity" class="select" style="width:100%">' + sevOpts + '</select></div>' +
+        '</div>' +
+        '<div><label class="dr-k" style="display:block;margin-bottom:6px">OWASP category</label>' +
+          '<select id="m-owasp" class="select" style="width:100%">' + owaspOpts + '</select></div>' +
+        mField("Condition", "m-condition", "textarea", 'event_type == "AuthorizeSecurityGroupIngress" and cidr == "0.0.0.0/0"') +
+        mField("Remediation", "m-remediation", "textarea", "Restrict security group ingress rules to known CIDR ranges.") +
+      '</div>' +
+      '<div class="drawer-foot">' +
+        '<button class="btn primary" id="m-submit">' + icon("zap", { size: 15 }) + 'Add rule</button>' +
+        '<button class="btn ghost" id="m-cancel">Cancel</button>' +
+      '</div></div></div>';
+    const close = () => { o.innerHTML = ""; };
+    document.getElementById("d-scrim").onclick = close;
+    document.getElementById("m-close").onclick = close;
+    document.getElementById("m-cancel").onclick = close;
+    document.getElementById("m-submit").onclick = () => submitNewRule(root, close);
+  }
+  function submitNewRule(root, close) {
+    const val = id => (document.getElementById(id) || {}).value || "";
+    const rule = {
+      id: val("m-id").trim(),
+      title: val("m-title").trim(),
+      description: val("m-desc").trim(),
+      service: (val("m-service").trim().toUpperCase()) || "GENERIC",
+      severity: val("m-severity"),
+      owasp: val("m-owasp"),
+      condition: val("m-condition").trim(),
+      remediation: val("m-remediation").trim(),
+    };
+    if (!rule.id || !rule.title) { toast("Rule ID and Title are required", "err"); return; }
+    apiPost("/api/rules/add", rule).then(res => {
+      if (!res || res.status === "error") { toast((res && res.message) || "Failed to add rule", "err"); return; }
+      const cloud = rule.id.startsWith("AZ") ? "azure" : rule.id.startsWith("GCP") ? "gcp" : "aws";
+      const newRule = Object.assign({ enabled: true, cloud }, rule);
+      APP.rules = [...APP.rules, newRule];
+      APP.ruleMap[rule.id] = newRule;
+      close();
+      updateRules(root);
+      toast("Rule " + rule.id + " added", "ok");
+    });
+  }
+
+  /* ============================================================
      COMPLIANCE
      ============================================================ */
   function renderCompliance(root) {
@@ -439,7 +550,11 @@
           statTile("Open findings", totalFindings, "var(--sev-high)", "across all categories", "alert") +
           statTile("Rules mapped", APP.rules.length, "var(--text)", "100% tagged", "sliders") +
         '</div><div class="comp-grid">' + cards + '</div></div>';
-    root.querySelector('[data-act="export-pdf"]').onclick = () => toast("Compliance report exported (PDF)", "info");
+    root.querySelector('[data-act="export-pdf"]').onclick = () => {
+      const cats = CH.computeCompliance(APP.rules, APP.alerts);
+      downloadAs(complianceToCSV(cats), "cloudhawk-compliance-" + stamp() + ".csv", "text/csv");
+      toast("Compliance report downloaded (CSV)", "ok");
+    };
   }
 
   /* ============================================================
@@ -533,7 +648,12 @@
       if (act === "clear") { sel.clear(); reRender(); return; }
       if (kind === "alerts") {
         if (act === "ack") APP.onAck(ids); else if (act === "resolve") APP.onResolve(ids);
-        else if (act === "suppress") APP.onSuppress(ids); else if (act === "export") toast("Exported " + ids.length + " finding(s)", "info");
+        else if (act === "suppress") APP.onSuppress(ids);
+        else if (act === "export") {
+          const sel = APP.alerts.filter(a => ids.includes(a.id));
+          downloadAs(alertsToCSV(sel), "cloudhawk-alerts-" + stamp() + ".csv", "text/csv");
+          toast("Exported " + ids.length + " finding(s) as CSV", "ok");
+        }
       } else {
         APP.onBulkRules(ids, act === "export" ? "export" : act);
       }
