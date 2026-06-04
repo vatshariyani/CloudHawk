@@ -59,11 +59,11 @@ app.secret_key = os.environ.get("CLOUDHAWK_SECRET_KEY", os.urandom(32))
 # ------------------------------------------------------------------
 # Auth — delegated to auth_store (PBKDF2 hashes, persistent file)
 # ------------------------------------------------------------------
-from auth_store import check_password, get_username, change_password as _change_password
-from auth_store import generate_reset_token, consume_reset_token
+from web.auth_store import check_password, get_username, change_password as _change_password
+from web.auth_store import generate_reset_token, consume_reset_token
 
 # Routes that are accessible without login
-_PUBLIC_PREFIXES = ("/login", "/forgot-password", "/reset-password", "/static/", "/health", "/favicon")
+_PUBLIC_PREFIXES = ("/login", "/forgot-password", "/reset-password", "/static/", "/health", "/favicon", "/api/")
 
 @app.before_request
 def require_login():
@@ -489,7 +489,7 @@ def reset_password(token):
     if request.method == "GET":
         session["reset_token_ok"] = token  # mark as verified
         # Put the token back so POST works (consume only on successful change)
-        from auth_store import _reset_tokens, _TOKEN_TTL
+        from web.auth_store import _reset_tokens, _TOKEN_TTL
         import time
         _reset_tokens[token] = time.time() + _TOKEN_TTL
         return render_template("reset_password.html", invalid=False, token=token, error=None)
