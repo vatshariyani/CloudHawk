@@ -49,9 +49,10 @@
       </div>
       <div class="sidebar-foot">
         <button class="nav-item" data-act="collapse" title="Collapse">{{ icon('chevron', 18) }}<span class="nav-label">Collapse</span></button>
+        <a class="nav-item" href="/logout" title="Sign out" style="color:var(--text-dim)">{{ icon('lock', 18) }}<span class="nav-label">Sign out</span></a>
         <div class="env-tag">
           <span class="env-dot"></span>
-          <div><div class="env-name">production</div><div class="env-sub mono">{{ env_label|default('multi-cloud') }}</div></div>
+          <div><div class="env-name">{{ session.get('username', 'admin') }}</div><div class="env-sub mono">{{ env_label|default('multi-cloud') }}</div></div>
         </div>
       </div>
     </nav>
@@ -70,7 +71,7 @@
           <div class="top-divider"></div>
           <button class="chip-btn active" data-act="topbar-live"><span class="live-dot on"></span>Live</button>
           <button class="icon-btn">{{ icon('bell', 18) }}<span class="bell-dot"></span></button>
-          <div class="avatar">{{ user_initials|default('SR') }}</div>
+          <div class="avatar" title="{{ session.get('username', '') }}">{{ (session.get('username', 'U') or 'U')[0]|upper }}</div>
         </div>
       </header>
 

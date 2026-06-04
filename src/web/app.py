@@ -12,7 +12,7 @@ import smtplib
 from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from flask import Flask, render_template, jsonify, request, redirect, url_for, flash
+from flask import Flask, render_template, jsonify, request, redirect, url_for, flash, session
 from typing import Dict, List, Any, Optional
 
 logging.basicConfig(level=logging.INFO)
@@ -55,6 +55,24 @@ except Exception as _e:
 app = Flask(__name__)
 # B1 fix: secret key from env var, never hardcoded
 app.secret_key = os.environ.get("CLOUDHAWK_SECRET_KEY", os.urandom(32))
+
+# ------------------------------------------------------------------
+# Auth credentials (set via env vars; defaults for local dev only)
+# ------------------------------------------------------------------
+_AUTH_USER = os.environ.get("CLOUDHAWK_USER", "admin")
+_AUTH_PASS = os.environ.get("CLOUDHAWK_PASSWORD", "cloudhawk")
+if _AUTH_USER == "admin" and _AUTH_PASS == "cloudhawk":
+    logger.warning("Using default credentials — set CLOUDHAWK_USER and CLOUDHAWK_PASSWORD env vars before deploying.")
+
+# Routes that are accessible without login
+_PUBLIC_PREFIXES = ("/login", "/static/", "/health", "/favicon")
+
+@app.before_request
+def require_login():
+    if any(request.path.startswith(p) for p in _PUBLIC_PREFIXES):
+        return  # allow public routes through
+    if not session.get("logged_in"):
+        return redirect(url_for("login", next=request.path))
 
 # Register API blueprints if available
 try:
@@ -389,6 +407,30 @@ def generate_recent_activity(alerts_data: Dict) -> List[Dict]:
 # ------------------------------------------------------------------
 # Routes — pages
 # ------------------------------------------------------------------
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if session.get("logged_in"):
+        return redirect(url_for("index"))
+    error = None
+    username = ""
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        if username == _AUTH_USER and password == _AUTH_PASS:
+            session["logged_in"] = True
+            session["username"] = username
+            next_url = request.args.get("next") or url_for("index")
+            return redirect(next_url)
+        error = "Invalid username or password."
+    return render_template("login.html", error=error, username=username)
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
 
 def _ch_data() -> Dict:
     dashboard.reload_alerts_if_changed()
