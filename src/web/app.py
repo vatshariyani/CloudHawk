@@ -57,20 +57,18 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("CLOUDHAWK_SECRET_KEY", os.urandom(32))
 
 # ------------------------------------------------------------------
-# Auth credentials (set via env vars; defaults for local dev only)
+# Auth — delegated to auth_store (PBKDF2 hashes, persistent file)
 # ------------------------------------------------------------------
-_AUTH_USER = os.environ.get("CLOUDHAWK_USER", "admin")
-_AUTH_PASS = os.environ.get("CLOUDHAWK_PASSWORD", "cloudhawk")
-if _AUTH_USER == "admin" and _AUTH_PASS == "cloudhawk":
-    logger.warning("Using default credentials — set CLOUDHAWK_USER and CLOUDHAWK_PASSWORD env vars before deploying.")
+from auth_store import check_password, get_username, change_password as _change_password
+from auth_store import generate_reset_token, consume_reset_token
 
 # Routes that are accessible without login
-_PUBLIC_PREFIXES = ("/login", "/static/", "/health", "/favicon")
+_PUBLIC_PREFIXES = ("/login", "/forgot-password", "/reset-password", "/static/", "/health", "/favicon")
 
 @app.before_request
 def require_login():
     if any(request.path.startswith(p) for p in _PUBLIC_PREFIXES):
-        return  # allow public routes through
+        return
     if not session.get("logged_in"):
         return redirect(url_for("login", next=request.path))
 
@@ -417,7 +415,7 @@ def login():
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
-        if username == _AUTH_USER and password == _AUTH_PASS:
+        if check_password(username, password):
             session["logged_in"] = True
             session["username"] = username
             next_url = request.args.get("next") or url_for("index")
@@ -430,6 +428,85 @@ def login():
 def logout():
     session.clear()
     return redirect(url_for("login"))
+
+
+@app.route("/change-password", methods=["GET", "POST"])
+def change_password():
+    error = None
+    success = None
+    if request.method == "POST":
+        current = request.form.get("current_password", "")
+        new_pw  = request.form.get("new_password", "")
+        confirm = request.form.get("confirm_password", "")
+        username = session.get("username", get_username())
+        if not check_password(username, current):
+            error = "Current password is incorrect."
+        elif len(new_pw) < 6:
+            error = "New password must be at least 6 characters."
+        elif new_pw != confirm:
+            error = "New passwords do not match."
+        else:
+            _change_password(username, new_pw)
+            success = "Password updated successfully."
+    return render_template("change_password.html", error=error, success=success)
+
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    sent = False
+    if request.method == "POST":
+        token = generate_reset_token()
+        reset_url = request.host_url.rstrip("/") + f"/reset-password/{token}"
+        # Always log to server console (works even without email configured)
+        logger.warning("PASSWORD RESET TOKEN: %s", reset_url)
+        print(f"\n{'='*60}\nPASSWORD RESET LINK (valid 15 min):\n{reset_url}\n{'='*60}\n")
+        # Also email if SMTP is configured
+        try:
+            dashboard.reload_config_if_changed()
+            email_cfg = dashboard.config.get("alerting", {}).get("channels", {}).get("email", {})
+            if email_cfg.get("enabled") and email_cfg.get("to_email"):
+                alert = {
+                    "title": "CloudHawk — Password Reset",
+                    "description": f"Click the link below to reset your password (valid 15 minutes):\n\n{reset_url}",
+                    "severity": "INFO", "service": "AUTH",
+                    "remediation": "If you did not request this, ignore this email.",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+                send_email_alert(alert, email_cfg)
+        except Exception:
+            pass
+        sent = True
+    return render_template("forgot_password.html", sent=sent)
+
+
+@app.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    error = None
+    if not consume_reset_token(token):
+        return render_template("reset_password.html", invalid=True, error=None)
+    # Token valid — re-generate so POST can still use it
+    # (we consumed it above; issue a new one tied to the same flow via session)
+    if request.method == "GET":
+        session["reset_token_ok"] = token  # mark as verified
+        # Put the token back so POST works (consume only on successful change)
+        from auth_store import _reset_tokens, _TOKEN_TTL
+        import time
+        _reset_tokens[token] = time.time() + _TOKEN_TTL
+        return render_template("reset_password.html", invalid=False, token=token, error=None)
+
+    # POST
+    new_pw  = request.form.get("new_password", "")
+    confirm = request.form.get("confirm_password", "")
+    if len(new_pw) < 6:
+        error = "Password must be at least 6 characters."
+    elif new_pw != confirm:
+        error = "Passwords do not match."
+    else:
+        _change_password(get_username(), new_pw)
+        session.pop("reset_token_ok", None)
+        flash("Password reset successfully. Please sign in.", "success")
+        return redirect(url_for("login"))
+    return render_template("reset_password.html", invalid=False, token=token, error=error)
 
 
 def _ch_data() -> Dict:
